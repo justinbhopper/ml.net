@@ -1,0 +1,55 @@
+﻿using Microsoft.ML.Data;
+
+namespace MLNet.Noshow
+{
+    public class AppointmentInput
+    {
+        [LoadColumn(0)]
+        public string AppointmentDate { get; set; }
+
+        [LoadColumn(1)]
+        public string AppointmentTime { get; set; }
+
+        [LoadColumn(2)]
+        public float Minutes { get; set; }
+
+        [LoadColumn(3)]
+        public string CreateDate { get; set; }
+
+        [LoadColumn(4)]
+        public string ShowTime { get; set; }
+
+        [LoadColumn(5)]
+        public string ShowNoShow { get; set; }
+
+        [LoadColumn(6)]
+        public string DateOfBirth { get; set; }
+
+        [LoadColumn(7)]
+        public string Sex { get; set; }
+
+        [LoadColumn(8)]
+        public string SexOrientKey { get; set; }
+
+        [LoadColumn(9)]
+        public string OMBWhite { get; set; }
+
+        [LoadColumn(10)]
+        public string OMBAmericanIndian { get; set; }
+
+        [LoadColumn(11)]
+        public string OMBAsian { get; set; }
+
+        [LoadColumn(12)]
+        public string OMBBlack { get; set; }
+
+        [LoadColumn(13)]
+        public string OMBHawaiian { get; set; }
+
+        [LoadColumn(14)]
+        public string CDCCode { get; set; }
+
+        [LoadColumn(15)]
+        public string HasEmergencyContact { get; set; }
+    }
+}
