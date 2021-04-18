@@ -32,6 +32,7 @@ namespace MLNet.Noshow
             LastAppointmentNoShow = input.LastAppointmentShowNoShow != "1";
             PreviousNoShows = input.PreviousNoShows;
             NoShowRatio = input.PreviousNoShows / input.TotalScheduled;
+            LastAppointmentScripts = input.LastAppointmentScripts;
             NoShow = input.ShowNoShow == "2";
         }
 
@@ -91,6 +92,8 @@ namespace MLNet.Noshow
         public float PreviousNoShows { get; set; }
 
         public float NoShowRatio { get; set; }
+
+        public float LastAppointmentScripts { get; set; }
 
         /// <summary>Show/no-show</summary>
         public bool NoShow { get; set; }

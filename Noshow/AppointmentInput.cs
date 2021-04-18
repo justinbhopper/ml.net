@@ -63,5 +63,8 @@ namespace MLNet.Noshow
 
         [LoadColumn(19)]
         public float TotalScheduled { get; set; }
+
+        [LoadColumn(20)]
+        public float LastAppointmentScripts { get; set; }
     }
 }
