@@ -7,8 +7,8 @@ namespace MLNet.Noshow
     {
         public void Map(AppointmentInput input)
         {
-            var date = input.AppointmentDate == "NULL" ? DateTime.Now : DateTime.Parse(input.AppointmentDate);
-            var time = input.AppointmentTime == "NULL" ? DateTime.Now : DateTime.Parse(input.AppointmentTime);
+            var date = DateTime.Parse(input.AppointmentDate);
+            var time = DateTime.Parse(input.AppointmentTime);
             var created = input.CreateDate == "NULL" ? (DateTime?)null : DateTime.Parse(input.CreateDate);
             var dob = input.DateOfBirth == "NULL" ? (DateTime?)null : DateTime.Parse(input.DateOfBirth);
 
@@ -29,6 +29,9 @@ namespace MLNet.Noshow
             OMBHawaiian = input.OMBHawaiian == "1";
             CDCCode = input.CDCCode;
             HasEmergencyContact = input.HasEmergencyContact == "1";
+            LastAppointmentNoShow = input.LastAppointmentShowNoShow != "1";
+            PreviousNoShows = input.PreviousNoShows;
+            NoShowRatio = input.PreviousNoShows / input.TotalScheduled;
             NoShow = input.ShowNoShow == "2";
         }
 
@@ -82,6 +85,12 @@ namespace MLNet.Noshow
         public string CDCCode { get; set; }
 
         public bool HasEmergencyContact { get; set; }
+
+        public bool LastAppointmentNoShow { get; set; }
+
+        public float PreviousNoShows { get; set; }
+
+        public float NoShowRatio { get; set; }
 
         /// <summary>Show/no-show</summary>
         public bool NoShow { get; set; }

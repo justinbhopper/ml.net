@@ -27,6 +27,9 @@ namespace MLNet.Noshow
             nameof(Appointment.OMBHawaiian),
             nameof(Appointment.OMBWhite),
             nameof(Appointment.HasEmergencyContact),
+            nameof(Appointment.LastAppointmentNoShow),
+            nameof(Appointment.PreviousNoShows),
+            nameof(Appointment.NoShowRatio),
         };
 
         private static readonly IList<string> s_categoryColumns = new[]
@@ -40,6 +43,7 @@ namespace MLNet.Noshow
             nameof(Appointment.OMBHawaiian),
             nameof(Appointment.OMBWhite),
             nameof(Appointment.HasEmergencyContact),
+            nameof(Appointment.LastAppointmentNoShow),
         };
 
         private static readonly string[] s_allFeatureNames = s_columns.Select(name => s_categoryColumns.Contains(name) ? name + "Encoded" : name).ToArray();

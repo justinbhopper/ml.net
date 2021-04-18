@@ -1,4 +1,4 @@
-select top 100
+select
 	a.AppointmentDate,
 	a.AppointmentTime,
 	l.Minutes,
@@ -15,15 +15,52 @@ select top 100
 	c.OMBBlack,
 	c.OMBHawaiian,
 	e.CDCCode,
-	case when isnull(c.EmergencyContName, '') <> '' then 1 else 0 end as HasEmergencyContact
-from dbo.Appointments a
-join dbo.SessionLength l on l.ID = a.LengthKey
-join dbo.Clients c on c.ID = a.ClientKey
-left join dbo.EnrollRace e
-    on c.RaceCode = e.Ethnicity_Tribal_Code
-    and NULLIF(LTRIM(RTRIM(e.CDCCode)),'') IS NOT NULL
-    and
-        (
-            (e.EffectiveDate  IS NOT NULL and e.EffectiveDate  <= GETDATE())
-        and (e.ExpirationDate IS     NULL or  e.ExpirationDate >  GETDATE())
-        )
+	case when isnull(c.EmergencyContName, '') <> '' then 1 else 0 end as HasEmergencyContact,
+	na.ShowNoShow as LastAppointmentShowNoShow,
+	tns.TotalNoShow as PreviousNoShows,
+	p.Total as TotalScheduled
+from 
+	dbo.Appointments a
+	join dbo.SessionLength l on l.ID = a.LengthKey
+	join dbo.Clients c on c.ID = a.ClientKey
+	left join dbo.EnrollRace e
+		on c.RaceCode = e.Ethnicity_Tribal_Code
+		and NULLIF(LTRIM(RTRIM(e.CDCCode)),'') IS NOT NULL
+		and
+			(
+				(e.EffectiveDate  IS NOT NULL and e.EffectiveDate  <= GETDATE())
+			and (e.ExpirationDate IS     NULL or  e.ExpirationDate >  GETDATE())
+			)
+	outer apply (
+		select top 1 na.ShowNoShow
+		from dbo.Appointments na 
+		where 
+			na.ID != a.ID
+			and na.ClientKey = a.ClientKey
+			and na.AppointmentDate < a.AppointmentDate
+		order by datediff(day, na.AppointmentDate, a.AppointmentDate) asc, datediff(minute, na.AppointmentTime, a.AppointmentTime) asc
+	) as na
+	outer apply (
+		select COUNT(*) as TotalNoShow
+		from dbo.Appointments na 
+		where 
+			na.ID != a.ID
+			and na.ClientKey = a.ClientKey
+			and na.AppointmentDate < a.AppointmentDate
+			and ShowNoShow = 2
+	) as tns
+	outer apply (
+		select COUNT(*) as Total
+		from dbo.Appointments na 
+		where 
+			na.ID != a.ID
+			and na.ClientKey = a.ClientKey
+			and na.AppointmentDate < a.AppointmentDate
+	) as p
+where
+	a.AppointmentDate is not null
+	and a.ShowNoShow is not null
+	and a.AppointmentTime is not null
+	and a.ClientKey is not null
+	and c.DateOfBirth is not null
+	and c.Sex is not null
