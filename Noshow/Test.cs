@@ -27,12 +27,14 @@ namespace MLNet.Noshow
             .Where(name => name != "Age").Concat(new[] { "AgeBinned" })
             .ToArray();
 
+        private readonly string _modelSavePath;
         private readonly string _dataPath;
 
         private readonly MLContext _context;
 
         public Test(string rootPath)
         {
+            _modelSavePath = Path.Combine(rootPath, "noshow", "model.zip");
             _dataPath = Path.Combine(rootPath, "noshow", "data.tsv");
             _context = new MLContext(seed: 0);
         }
@@ -48,18 +50,18 @@ namespace MLNet.Noshow
             var trainingData = split.TrainSet;
             var testData = split.TestSet;
 
-            var model = CreateModel(trainingData);
+            CreateModel(trainingData);
             
-            Evaluate(model, testData);
+            Evaluate(testData);
         }
 
-        private ITransformer CreateModel(IDataView trainingData)
+        private void CreateModel(IDataView trainingData)
         {
             var transforms = _context.Transforms;
 
             var encodedColumns = s_categoryColumns.Select(name => new InputOutputColumnPair(name + "Encoded", name)).ToArray();
 
-            var dataProcessPipeline = transforms.CustomMapping<AppointmentInput, Appointment>((src, dest) => dest.Map(src), contractName: null)
+            var dataProcessPipeline = transforms.CustomMapping(new AppointmentFactory().GetMapping(), contractName: "Appointment")
                 .Append(transforms.CopyColumns("Label", nameof(Appointment.NoShow)))
                 
                 // Put age into separate bins
@@ -81,14 +83,20 @@ namespace MLNet.Noshow
             
             ConsoleHelper.Print(s_allFeatureNames, contributionMetrics, trainsformedData);
 
-            return trainedModel;
+            // Save the model
+            SaveModel(trainingData.Schema, trainedModel);
         }
 
-        private void Evaluate(ITransformer model, IDataView testData)
+        private void Evaluate(IDataView testData)
         {
+            var model = _context.Model.Load(_modelSavePath, out var _);
             var predictions = model.Transform(testData);
             var metrics = _context.BinaryClassification.Evaluate(predictions, "Label");
             ConsoleHelper.Print("Test Data", metrics);
+        }
+        private void SaveModel(DataViewSchema schema, ITransformer model)
+        {
+            _context.Model.Save(model, schema, _modelSavePath);
         }
 
         private void Predict(PredictionEngine<Appointment, NoShowPrediction> predictionEngine, string description, Appointment sample)
