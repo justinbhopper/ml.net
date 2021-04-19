@@ -14,6 +14,7 @@ namespace MLNet.Noshow
         {
             nameof(Appointment.LeadTime),
             nameof(Appointment.PreviousNoShows),
+            nameof(Appointment.TotalScheduled),
             nameof(Appointment.NoShowRatio),
             nameof(Appointment.Age),
         };
@@ -60,7 +61,7 @@ namespace MLNet.Noshow
             var transforms = _context.Transforms;
 
             var encodedColumns = s_categoryColumns.Select(name => new InputOutputColumnPair(name + "Encoded", name)).ToArray();
-
+            
             var dataProcessPipeline = transforms.CustomMapping(new AppointmentFactory().GetMapping(), contractName: "Appointment")
                 .Append(transforms.CopyColumns("Label", nameof(Appointment.NoShow)))
                 

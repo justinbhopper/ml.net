@@ -31,6 +31,7 @@ namespace MLNet.Noshow
             HasEmergencyContact = input.HasEmergencyContact == "1";
             LastAppointmentNoShow = input.LastAppointmentShowNoShow != "1";
             PreviousNoShows = input.PreviousNoShows;
+            TotalScheduled = input.TotalScheduled;
             IsFirstAppt = input.TotalScheduled == 0;
             NoShowRatio = input.PreviousNoShows / input.TotalScheduled;
             LastAppointmentScripts = input.LastAppointmentScripts;
@@ -93,6 +94,8 @@ namespace MLNet.Noshow
         public bool LastAppointmentNoShow { get; set; }
 
         public float PreviousNoShows { get; set; }
+
+        public float TotalScheduled { get; set; }
 
         public bool IsFirstAppt { get; set; }
 
