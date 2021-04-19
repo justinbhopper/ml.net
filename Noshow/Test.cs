@@ -12,7 +12,7 @@ namespace MLNet.Noshow
     {
         private static readonly IList<string> s_columns = new[]
         {
-            nameof(Appointment.Weekend),
+            nameof(Appointment.DayOfWeek),
             nameof(Appointment.Season),
             nameof(Appointment.Month),
             nameof(Appointment.Week),
@@ -29,13 +29,15 @@ namespace MLNet.Noshow
             nameof(Appointment.HasEmergencyContact),
             nameof(Appointment.LastAppointmentNoShow),
             nameof(Appointment.PreviousNoShows),
+            nameof(Appointment.IsFirstAppt),
+            nameof(Appointment.IsRecurring),
+            nameof(Appointment.IsFirstInRecurrence),
             nameof(Appointment.NoShowRatio),
         };
 
         private static readonly IList<string> s_categoryColumns = new[]
         {
             nameof(Appointment.Sex),
-            nameof(Appointment.Weekend),
             nameof(Appointment.CDCCode),
             nameof(Appointment.OMBAmericanIndian),
             nameof(Appointment.OMBAsian),
@@ -44,6 +46,9 @@ namespace MLNet.Noshow
             nameof(Appointment.OMBWhite),
             nameof(Appointment.HasEmergencyContact),
             nameof(Appointment.LastAppointmentNoShow),
+            nameof(Appointment.IsFirstAppt),
+            nameof(Appointment.IsRecurring),
+            nameof(Appointment.IsFirstInRecurrence),
         };
 
         private static readonly string[] s_allFeatureNames = s_columns.Select(name => s_categoryColumns.Contains(name) ? name + "Encoded" : name).ToArray();
@@ -82,7 +87,7 @@ namespace MLNet.Noshow
 
             var dataProcessPipeline = transforms.CustomMapping<AppointmentInput, Appointment>((src, dest) => dest.Map(src), contractName: "Appointment")
                 .Append(transforms.CopyColumns("Label", nameof(Appointment.NoShow)))
-
+                
                 .Append(transforms.Categorical.OneHotEncoding(encodedColumns, OneHotEncodingEstimator.OutputKind.Indicator))
 
                 // Combine data into Features

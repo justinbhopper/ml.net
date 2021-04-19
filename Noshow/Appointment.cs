@@ -14,7 +14,7 @@ namespace MLNet.Noshow
 
             Hour = time.Hour;
             CreatedDaysAhead = !created.HasValue ? 0 : ((float)(date - created.Value).TotalDays);
-            Weekend = date.DayOfWeek == DayOfWeek.Sunday || date.DayOfWeek == DayOfWeek.Saturday;
+            DayOfWeek = (int)date.DayOfWeek;
             Season = CalcSeason(date);
             Month = date.Month;
             Week = ISOWeek.GetWeekOfYear(date);
@@ -31,8 +31,11 @@ namespace MLNet.Noshow
             HasEmergencyContact = input.HasEmergencyContact == "1";
             LastAppointmentNoShow = input.LastAppointmentShowNoShow != "1";
             PreviousNoShows = input.PreviousNoShows;
+            IsFirstAppt = input.TotalScheduled == 0;
             NoShowRatio = input.PreviousNoShows / input.TotalScheduled;
             LastAppointmentScripts = input.LastAppointmentScripts;
+            IsRecurring = input.IsRecurring == "1";
+            IsFirstInRecurrence = input.IsFirstInRecurrence == "1";
             NoShow = input.ShowNoShow == "2";
         }
 
@@ -49,8 +52,7 @@ namespace MLNet.Noshow
 
         public float CreatedDaysAhead { get; set; }
 
-        /// <summary>Is this appt on a weekend?</summary>
-        public bool Weekend { get; set; }
+        public float DayOfWeek { get; set; }
 
         /// <summary>It was the Nth season of the year.</summary>
         public float Season { get; set; }
@@ -91,9 +93,15 @@ namespace MLNet.Noshow
 
         public float PreviousNoShows { get; set; }
 
+        public bool IsFirstAppt { get; set; }
+
         public float NoShowRatio { get; set; }
 
         public float LastAppointmentScripts { get; set; }
+
+        public bool IsRecurring { get; set; }
+
+        public bool IsFirstInRecurrence { get; set; }
 
         /// <summary>Show/no-show</summary>
         public bool NoShow { get; set; }

@@ -5,6 +5,8 @@ select
 	a.CreateDate,
 	a.ShowTime,
 	a.ShowNoShow,
+	case when a.RecFirstKey is null then 1 else 0 end as IsRecurring,
+	case when a.RecFirstKey = a.ID then 1 else 0 end as IsFirstInRecurrence,
 	a.ClientKey,
 	c.DateOfBirth,
 	c.Sex,
