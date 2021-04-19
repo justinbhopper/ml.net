@@ -27,14 +27,12 @@ namespace MLNet.Noshow
             .Where(name => name != "Age").Concat(new[] { "AgeBinned" })
             .ToArray();
 
-        private readonly string _modelSavePath;
         private readonly string _dataPath;
 
         private readonly MLContext _context;
 
         public Test(string rootPath)
         {
-            _modelSavePath = Path.Combine(rootPath, "noshow", "model.zip");
             _dataPath = Path.Combine(rootPath, "noshow", "data.tsv");
             _context = new MLContext(seed: 0);
         }
@@ -46,14 +44,12 @@ namespace MLNet.Noshow
             // Filter out cancelled appointments
             data = _context.Data.FilterRowsByColumn(data, "ShowNoShow", lowerBound: 1, upperBound: 3); 
 
-            var split = _context.Data.TrainTestSplit(data, testFraction: 0.5);
+            var split = _context.Data.TrainTestSplit(data, testFraction: 0.05);
             var trainingData = split.TrainSet;
             var testData = split.TestSet;
 
             var model = CreateModel(trainingData);
             
-            SaveModel(trainingData.Schema, model);
-
             Evaluate(model, testData);
         }
 
@@ -63,7 +59,7 @@ namespace MLNet.Noshow
 
             var encodedColumns = s_categoryColumns.Select(name => new InputOutputColumnPair(name + "Encoded", name)).ToArray();
 
-            var dataProcessPipeline = transforms.CustomMapping<AppointmentInput, Appointment>((src, dest) => dest.Map(src), contractName: "Appointment")
+            var dataProcessPipeline = transforms.CustomMapping<AppointmentInput, Appointment>((src, dest) => dest.Map(src), contractName: null)
                 .Append(transforms.CopyColumns("Label", nameof(Appointment.NoShow)))
                 
                 // Put age into separate bins
@@ -74,7 +70,8 @@ namespace MLNet.Noshow
                 // Combine data into Features
                 .Append(transforms.Concatenate("Features", s_allFeatureNames));
 
-            var trainer = _context.BinaryClassification.Trainers.SdcaLogisticRegression("Label", "Features");
+            // var trainer = _context.BinaryClassification.Trainers.LinearSvm("Label", "Features"); // 17% F1, 62% AUC, 81% Accuracy
+            var trainer = _context.BinaryClassification.Trainers.SdcaLogisticRegression("Label", "Features"); // 28% F1, 72% AUC, 68% Accuracy
             var trainingPipeline = dataProcessPipeline.Append(trainer);
 
             var trainedModel = trainingPipeline.Fit(trainingData);
@@ -85,11 +82,6 @@ namespace MLNet.Noshow
             ConsoleHelper.Print(s_allFeatureNames, contributionMetrics, trainsformedData);
 
             return trainedModel;
-        }
-
-        private void SaveModel(DataViewSchema schema, ITransformer model)
-        {
-            _context.Model.Save(model, schema, _modelSavePath);
         }
 
         private void Evaluate(ITransformer model, IDataView testData)

@@ -42,6 +42,23 @@ namespace MLNet
             Console.WriteLine();
         }
 
+        public static void Print(string name, BinaryClassificationMetrics metrics)
+        {
+            Console.WriteLine($"*************************************************************************************************************");
+            Console.WriteLine($"*       Metrics for {name} binary classification model");
+            Console.WriteLine($"*------------------------------------------------------------------------------------------------------------");
+            Console.WriteLine($"*       Accuracy:          {metrics.Accuracy:P2}");
+            Console.WriteLine($"*       AUC:               {metrics.AreaUnderRocCurve:P2}");
+            Console.WriteLine($"*       AUC recall Curve:  {metrics.AreaUnderPrecisionRecallCurve:P2}");
+            Console.WriteLine($"*       F1Score:           {metrics.F1Score:P2}");
+            Console.WriteLine($"*       PositivePrecision: {metrics.PositivePrecision:#.##}");
+            Console.WriteLine($"*       PositiveRecall:    {metrics.PositiveRecall:#.##}");
+            Console.WriteLine($"*       NegativePrecision: {metrics.NegativePrecision:#.##}");
+            Console.WriteLine($"*       NegativeRecall:    {metrics.NegativeRecall:P2}");
+            Console.WriteLine($"*************************************************************************************************************");
+            Console.WriteLine();
+        }
+
         public static void Print(string name, MulticlassClassificationMetrics metrics)
         {
             Console.WriteLine($"*************************************************************************************************************");
