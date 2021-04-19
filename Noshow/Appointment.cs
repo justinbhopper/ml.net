@@ -13,7 +13,7 @@ namespace MLNet.Noshow
             var dob = input.DateOfBirth == "NULL" ? (DateTime?)null : DateTime.Parse(input.DateOfBirth);
 
             Hour = time.Hour;
-            CreatedDaysAhead = !created.HasValue ? 0 : ((float)(date - created.Value).TotalDays);
+            LeadTime = !created.HasValue ? 0 : ((float)(date - created.Value).TotalDays);
             DayOfWeek = (int)date.DayOfWeek;
             Season = CalcSeason(date);
             Month = date.Month;
@@ -36,7 +36,8 @@ namespace MLNet.Noshow
             LastAppointmentScripts = input.LastAppointmentScripts;
             IsRecurring = input.IsRecurring == "1";
             IsFirstInRecurrence = input.IsFirstInRecurrence == "1";
-            NoShow = input.ShowNoShow == "2";
+            Cancelled = input.ShowNoShow == 3 ? 1 : 0;
+            NoShow = input.ShowNoShow == 2;
         }
 
         private static int CalcSeason(DateTime date)
@@ -50,7 +51,7 @@ namespace MLNet.Noshow
 
         public float Hour { get; set; }
 
-        public float CreatedDaysAhead { get; set; }
+        public float LeadTime { get; set; }
 
         public float DayOfWeek { get; set; }
 
@@ -102,6 +103,8 @@ namespace MLNet.Noshow
         public bool IsRecurring { get; set; }
 
         public bool IsFirstInRecurrence { get; set; }
+
+        public float Cancelled { get; set; }
 
         /// <summary>Show/no-show</summary>
         public bool NoShow { get; set; }

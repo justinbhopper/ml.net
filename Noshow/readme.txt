@@ -1,3 +1,6 @@
+https://scholar.smu.edu/cgi/viewcontent.cgi?article=1059&context=datasciencereview
+https://www.linkedin.com/pulse/how-predict-no-show-analysis-appointment-rates-brazilian-burns/
+
 select
 	a.AppointmentDate,
 	a.AppointmentTime,

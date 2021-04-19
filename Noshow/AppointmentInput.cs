@@ -20,7 +20,7 @@ namespace MLNet.Noshow
         public string ShowTime { get; set; }
 
         [LoadColumn(5)]
-        public string ShowNoShow { get; set; }
+        public float ShowNoShow { get; set; }
 
         [LoadColumn(6)]
         public string IsRecurring { get; set; }
