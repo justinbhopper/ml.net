@@ -65,15 +65,15 @@ namespace MLNet.Noshow
                 .Append(transforms.CopyColumns("Label", nameof(Appointment.NoShow)))
                 
                 // Put age into separate bins
-                .Append(transforms.NormalizeBinning("AgeBinned", nameof(Appointment.Age), maximumBinCount: 15))
+                .Append(transforms.NormalizeBinning("AgeBinned", nameof(Appointment.Age), maximumBinCount: 10))
                 
                 //.Append(transforms.Categorical.OneHotEncoding(encodedColumns, OneHotEncodingEstimator.OutputKind.Indicator))
 
                 // Combine data into Features
                 .Append(transforms.Concatenate("Features", s_allFeatureNames));
 
-            // var trainer = _context.BinaryClassification.Trainers.LinearSvm("Label", "Features"); // 17% F1, 62% AUC, 81% Accuracy
-            var trainer = _context.BinaryClassification.Trainers.SdcaLogisticRegression("Label", "Features"); // 28% F1, 72% AUC, 68% Accuracy
+            // var trainer = _context.BinaryClassification.Trainers.LinearSvm(labelColumnName: "Label", featureColumnName: "Features"); // 17% F1, 62% AUC, 81% Accuracy
+            var trainer = _context.BinaryClassification.Trainers.SdcaLogisticRegression(labelColumnName: "Label", featureColumnName: "Features"); // 28% F1, 72% AUC, 68% Accuracy
             var trainingPipeline = dataProcessPipeline.Append(trainer);
 
             var trainedModel = trainingPipeline.Fit(trainingData);
