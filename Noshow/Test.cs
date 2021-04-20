@@ -81,6 +81,7 @@ namespace MLNet.Noshow
             {
                 LabelColumnName = "Label",
                 FeatureColumnName = "Features",
+                L1Regularization = 0.005f
             });
 
             var trainingPipeline = dataProcessPipeline.Append(trainer);
