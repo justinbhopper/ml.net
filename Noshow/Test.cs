@@ -47,58 +47,80 @@ namespace MLNet.Noshow
             // Filter out cancelled appointments
             data = _context.Data.FilterRowsByColumn(data, "ShowNoShow", lowerBound: 1, upperBound: 3); 
 
-            var split = _context.Data.TrainTestSplit(data, testFraction: 0.05);
+            var split = _context.Data.TrainTestSplit(data, testFraction: 0.05, seed: 0);
             var trainingData = split.TrainSet;
             var testData = split.TestSet;
 
-            CreateModel(trainingData);
-            
-            Evaluate(testData);
+            var pipeline = CreateDataPipeline();
+
+            double? best = null;
+            while (true)
+            {
+                var trainer = _context.BinaryClassification.Trainers.SdcaLogisticRegression(new SdcaLogisticRegressionBinaryTrainer.Options
+                {
+                    L1Regularization = 0.005f,
+                });
+
+                var model = CreateModel(pipeline, trainingData, trainer);
+
+                var f1 = Evaluate("Test", model, testData);
+
+                if (!best.HasValue || f1 > best.Value)
+                {
+                    best = f1;
+                    Console.WriteLine("Saving...");
+                    SaveModel(trainingData.Schema, model);
+                }
+            }
         }
 
-        private void CreateModel(IDataView trainingData)
+        private EstimatorChain<ColumnConcatenatingTransformer> CreateDataPipeline()
         {
             var transforms = _context.Transforms;
 
             var encodedColumns = s_categoryColumns.Select(name => new InputOutputColumnPair(name + "Encoded", name)).ToArray();
-            
-            var dataProcessPipeline = transforms.CustomMapping(new AppointmentFactory().GetMapping(), contractName: "Appointment")
+
+            return transforms.CustomMapping(new AppointmentFactory().GetMapping(), contractName: "Appointment")
                 .Append(transforms.CopyColumns("Label", nameof(Appointment.NoShow)))
-                
+
                 // Put age into separate bins
                 .Append(transforms.NormalizeBinning("AgeBinned", nameof(Appointment.Age), maximumBinCount: 10))
-                
+
                 //.Append(transforms.Categorical.OneHotEncoding(encodedColumns, OneHotEncodingEstimator.OutputKind.Indicator))
 
                 // Combine data into Features
-                .Append(transforms.Concatenate("Features", s_allFeatureNames));
+                .Append(transforms.Concatenate("Features", s_allFeatureNames))
+                
+                .AppendCacheCheckpoint(_context);
+        }
 
-            var trainer = _context.BinaryClassification.Trainers.SdcaLogisticRegression(new SdcaLogisticRegressionBinaryTrainer.Options
-            {
-                LabelColumnName = "Label",
-                FeatureColumnName = "Features",
-                L1Regularization = 0.005f,
-            });
-
-            var trainingPipeline = dataProcessPipeline.Append(trainer);
+        private ITransformer CreateModel<T>(EstimatorChain<ColumnConcatenatingTransformer> pipeline, IDataView trainingData, IEstimator<T> trainer)
+            where T : class, ITransformer
+        {
+            var trainingPipeline = pipeline.Append(trainer);
 
             var trainedModel = trainingPipeline.Fit(trainingData);
 
-            var trainsformedData = trainedModel.Transform(trainingData);
-            var contributionMetrics = _context.BinaryClassification.PermutationFeatureImportance(trainedModel.LastTransformer, trainsformedData, "Label", numberOfExamplesToUse: 100);
-            
-            ConsoleHelper.Print(s_allFeatureNames, contributionMetrics, trainsformedData);
+            //var trainsformedData = trainedModel.Transform(trainingData);
+            //var contributionMetrics = _context.BinaryClassification.PermutationFeatureImportance(trainedModel.LastTransformer, trainsformedData, "Label", numberOfExamplesToUse: 100);
 
-            // Save the model
-            SaveModel(trainingData.Schema, trainedModel);
+            //ConsoleHelper.Print(s_allFeatureNames, contributionMetrics, trainsformedData);
+
+            return trainedModel;
         }
 
         private void Evaluate(IDataView testData)
         {
             var model = _context.Model.Load(_modelSavePath, out var _);
+            Evaluate("Saved model", model, testData);
+        }
+
+        private double Evaluate(string modelName, ITransformer model, IDataView testData)
+        {
             var predictions = model.Transform(testData);
-            var metrics = _context.BinaryClassification.Evaluate(predictions, "Label");
-            ConsoleHelper.Print("Test Data", metrics);
+            var metrics = _context.BinaryClassification.Evaluate(predictions);
+            ConsoleHelper.Print(modelName, metrics);
+            return metrics.F1Score;
         }
 
         private void SaveModel(DataViewSchema schema, ITransformer model)
@@ -119,6 +141,7 @@ namespace MLNet.Noshow
             return _context.Data.LoadFromTextFile<AppointmentInput>(_dataPath, new TextLoader.Options
             {
                 HasHeader = true,
+                MaxRows = long.MaxValue
             });
         }
     }
