@@ -54,10 +54,18 @@ namespace MLNet.Noshow
                 if (a.Sex != "M" && a.Sex != "F")
                     return true;
 
+                // Balance number of shows and no-shows using features we know don't normally matter
                 if (a.ShowNoShow == 1)
                 {
-                    var created = DateTime.Parse(a.AppointmentDate);
-                    return created.DayOfWeek == DayOfWeek.Monday || created.DayOfWeek == DayOfWeek.Thursday || created.DayOfWeek == DayOfWeek.Saturday;
+                    var date = DateTime.Parse(a.AppointmentDate);
+                    if (date.DayOfWeek == DayOfWeek.Monday || date.DayOfWeek == DayOfWeek.Thursday || date.DayOfWeek == DayOfWeek.Saturday)
+                        return true;
+
+                    if (a.ClientKey.Contains("A") || a.ClientKey.Contains("1") || a.ClientKey.Contains("3"))
+                        return true;
+
+                    if (a.Sex == "F" && a.HasEmergencyContact == "1")
+                        return true;
                 }
 
                 return false;
