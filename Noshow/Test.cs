@@ -5,7 +5,6 @@ using System.Linq;
 using Microsoft.ML;
 using Microsoft.ML.Data;
 using Microsoft.ML.Trainers;
-using Microsoft.ML.Transforms;
 
 namespace MLNet.Noshow
 {
@@ -74,14 +73,11 @@ namespace MLNet.Noshow
                 // Combine data into Features
                 .Append(transforms.Concatenate("Features", s_allFeatureNames));
 
-            // var trainer = _context.BinaryClassification.Trainers.LinearSvm(labelColumnName: "Label", featureColumnName: "Features"); // 17% F1, 62% AUC, 81% Accuracy
-
-            // 27% F1, 72% AUC, 81% Accuracy
             var trainer = _context.BinaryClassification.Trainers.SdcaLogisticRegression(new SdcaLogisticRegressionBinaryTrainer.Options
             {
                 LabelColumnName = "Label",
                 FeatureColumnName = "Features",
-                L1Regularization = 0.005f
+                L1Regularization = 0.005f,
             });
 
             var trainingPipeline = dataProcessPipeline.Append(trainer);
@@ -104,6 +100,7 @@ namespace MLNet.Noshow
             var metrics = _context.BinaryClassification.Evaluate(predictions, "Label");
             ConsoleHelper.Print("Test Data", metrics);
         }
+
         private void SaveModel(DataViewSchema schema, ITransformer model)
         {
             _context.Model.Save(model, schema, _modelSavePath);
