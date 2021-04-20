@@ -61,7 +61,7 @@ namespace MLNet.Noshow
                     if (date.DayOfWeek == DayOfWeek.Monday || date.DayOfWeek == DayOfWeek.Thursday || date.DayOfWeek == DayOfWeek.Saturday)
                         return true;
 
-                    if (a.ClientKey.Contains("A") || a.ClientKey.Contains("1") || a.ClientKey.Contains("3"))
+                    if (a.ClientKey.Contains("A") || a.ClientKey.Contains("1") || a.ClientKey.Contains("3") || a.ClientKey.Contains("5") || a.ClientKey.Contains("7"))
                         return true;
 
                     if (a.Sex == "F" && a.HasEmergencyContact == "1")
