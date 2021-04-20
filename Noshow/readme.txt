@@ -1,5 +1,7 @@
 https://scholar.smu.edu/cgi/viewcontent.cgi?article=1059&context=datasciencereview
 https://www.linkedin.com/pulse/how-predict-no-show-analysis-appointment-rates-brazilian-burns/
+https://journalofbigdata.springeropen.com/articles/10.1186/s40537-020-00384-9
+https://www.ideas2it.com/blogs/patient-appointment-no-shows-prediction/
 
 select
 	a.AppointmentDate,

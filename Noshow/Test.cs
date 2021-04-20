@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Microsoft.ML;
 using Microsoft.ML.Data;
+using Microsoft.ML.Trainers;
 using Microsoft.ML.Transforms;
 
 namespace MLNet.Noshow
@@ -74,7 +75,14 @@ namespace MLNet.Noshow
                 .Append(transforms.Concatenate("Features", s_allFeatureNames));
 
             // var trainer = _context.BinaryClassification.Trainers.LinearSvm(labelColumnName: "Label", featureColumnName: "Features"); // 17% F1, 62% AUC, 81% Accuracy
-            var trainer = _context.BinaryClassification.Trainers.SdcaLogisticRegression(labelColumnName: "Label", featureColumnName: "Features"); // 28% F1, 72% AUC, 68% Accuracy
+
+            // 27% F1, 72% AUC, 81% Accuracy
+            var trainer = _context.BinaryClassification.Trainers.SdcaLogisticRegression(new SdcaLogisticRegressionBinaryTrainer.Options
+            {
+                LabelColumnName = "Label",
+                FeatureColumnName = "Features",
+            });
+
             var trainingPipeline = dataProcessPipeline.Append(trainer);
 
             var trainedModel = trainingPipeline.Fit(trainingData);
