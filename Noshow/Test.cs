@@ -58,6 +58,7 @@ namespace MLNet.Noshow
             {
                 var trainer = _context.BinaryClassification.Trainers.SdcaLogisticRegression(new SdcaLogisticRegressionBinaryTrainer.Options
                 {
+                    NumberOfThreads = 1, // Ensure deterministic results
                     L1Regularization = 0.005f,
                 });
 
@@ -141,7 +142,6 @@ namespace MLNet.Noshow
             return _context.Data.LoadFromTextFile<AppointmentInput>(_dataPath, new TextLoader.Options
             {
                 HasHeader = true,
-                MaxRows = long.MaxValue
             });
         }
     }
