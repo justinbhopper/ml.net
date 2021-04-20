@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.ML;
+using Microsoft.ML.Calibrators;
 using Microsoft.ML.Data;
 using Microsoft.ML.Trainers;
 
@@ -36,7 +37,7 @@ namespace MLNet.Noshow
         public Test(string rootPath)
         {
             _modelSavePath = Path.Combine(rootPath, "noshow", "model.zip");
-            _dataPath = Path.Combine(rootPath, "noshow", "data.tsv");
+            _dataPath = Path.Combine(rootPath, "noshow", "data_hmhcks.tsv");
             _context = new MLContext(seed: 0);
         }
 
@@ -45,13 +46,26 @@ namespace MLNet.Noshow
             var data = GetData();
 
             // Filter out cancelled appointments
-            data = _context.Data.FilterRowsByColumn(data, "ShowNoShow", lowerBound: 1, upperBound: 3); 
+            data = _context.Data.FilterByCustomPredicate<AppointmentInput>(data, a =>
+            {
+                if (a.ShowNoShow != 1 && a.ShowNoShow != 2)
+                    return true;
+
+                if (a.Sex != "M" && a.Sex != "F")
+                    return true;
+
+                if (a.ShowNoShow == 1)
+                {
+                    var created = DateTime.Parse(a.AppointmentDate);
+                    return created.DayOfWeek == DayOfWeek.Monday || created.DayOfWeek == DayOfWeek.Thursday || created.DayOfWeek == DayOfWeek.Saturday;
+                }
+
+                return false;
+            });
 
             var split = _context.Data.TrainTestSplit(data, testFraction: 0.05, seed: 0);
             var trainingData = split.TrainSet;
             var testData = split.TestSet;
-
-            var pipeline = CreateDataPipeline();
 
             double? best = null;
             while (true)
@@ -62,25 +76,32 @@ namespace MLNet.Noshow
                     L1Regularization = 0.005f,
                 });
 
-                var model = CreateModel(pipeline, trainingData, trainer);
+                var pipeline = CreatePipeline(trainer);
+
+                var model = CreateModel(pipeline, trainingData);
 
                 var f1 = Evaluate("Test", model, testData);
 
                 if (!best.HasValue || f1 > best.Value)
                 {
                     best = f1;
-                    Console.WriteLine("Saving...");
                     SaveModel(trainingData.Schema, model);
+                    Console.WriteLine("Saved new model");
+                }
+                else if (best.HasValue)
+                {
+                    Console.WriteLine($"Best model is still {best.Value:P2}");
                 }
             }
         }
 
-        private EstimatorChain<ColumnConcatenatingTransformer> CreateDataPipeline()
+        private EstimatorChain<T> CreatePipeline<T>(IEstimator<T> trainer)
+            where T : class, ITransformer
         {
             var transforms = _context.Transforms;
 
             var encodedColumns = s_categoryColumns.Select(name => new InputOutputColumnPair(name + "Encoded", name)).ToArray();
-
+            
             return transforms.CustomMapping(new AppointmentFactory().GetMapping(), contractName: "Appointment")
                 .Append(transforms.CopyColumns("Label", nameof(Appointment.NoShow)))
 
@@ -92,15 +113,15 @@ namespace MLNet.Noshow
                 // Combine data into Features
                 .Append(transforms.Concatenate("Features", s_allFeatureNames))
                 
-                .AppendCacheCheckpoint(_context);
+                .AppendCacheCheckpoint(_context)
+                
+                .Append(trainer);
         }
 
-        private ITransformer CreateModel<T>(EstimatorChain<ColumnConcatenatingTransformer> pipeline, IDataView trainingData, IEstimator<T> trainer)
+        private ITransformer CreateModel<T>(EstimatorChain<T> pipeline, IDataView trainingData)
             where T : class, ITransformer
         {
-            var trainingPipeline = pipeline.Append(trainer);
-
-            var trainedModel = trainingPipeline.Fit(trainingData);
+            var trainedModel = pipeline.Fit(trainingData);
 
             //var trainsformedData = trainedModel.Transform(trainingData);
             //var contributionMetrics = _context.BinaryClassification.PermutationFeatureImportance(trainedModel.LastTransformer, trainsformedData, "Label", numberOfExamplesToUse: 100);

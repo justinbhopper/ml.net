@@ -23,6 +23,16 @@ namespace MLNet
             Console.WriteLine();
         }
 
+        public static void Print(string name, AnomalyDetectionMetrics metrics)
+        {
+            Console.WriteLine($"*************************************************************************************************************");
+            Console.WriteLine($"*       Metrics for {name} Anomaly Detection model");
+            Console.WriteLine($"*------------------------------------------------------------------------------------------------------------");
+            Console.WriteLine($"*       AUC:           {metrics.AreaUnderRocCurve:P2}");
+            Console.WriteLine($"*************************************************************************************************************");
+            Console.WriteLine();
+        }
+
         public static void Print(string name, CalibratedBinaryClassificationMetrics metrics)
         {
             Console.WriteLine($"*************************************************************************************************************");

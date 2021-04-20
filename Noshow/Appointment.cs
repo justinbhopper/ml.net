@@ -66,7 +66,7 @@ namespace MLNet.Noshow
         public float Week { get; set; }
 
         /// <summary>It was the Nth day of the year.</summary>
-        public int DayOfYear { get; set; }
+        public float DayOfYear { get; set; }
 
         public float Minutes { get; set; }
 
