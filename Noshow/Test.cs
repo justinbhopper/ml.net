@@ -45,12 +45,8 @@ namespace MLNet.Noshow
         {
             var data = GetData();
 
-            var split = _context.Data.TrainTestSplit(data, testFraction: 0.05, seed: 0);
-            var trainingData = split.TrainSet;
-            var testData = split.TestSet;
-
             // Filter out cancelled appointments
-            trainingData = _context.Data.FilterByCustomPredicate<AppointmentInput>(trainingData, a =>
+            data = _context.Data.FilterByCustomPredicate<AppointmentInput>(data, a =>
             {
                 if (a.ShowNoShow != 1 && a.ShowNoShow != 2)
                     return true;
@@ -58,22 +54,12 @@ namespace MLNet.Noshow
                 if (a.Sex != "M" && a.Sex != "F")
                     return true;
 
-                /*
-                // Balance number of shows and no-shows using features we know don't normally matter
-                if (a.ShowNoShow == 1)
-                {
-                    var date = DateTime.Parse(a.AppointmentDate);
-                    if (date.DayOfWeek == DayOfWeek.Monday || date.DayOfWeek == DayOfWeek.Thursday || date.DayOfWeek == DayOfWeek.Saturday)
-                        return true;
-                    if (a.ClientKey.Contains("A") || a.ClientKey.Contains("1") || a.ClientKey.Contains("3") || a.ClientKey.Contains("5") || a.ClientKey.Contains("7"))
-                        return true;
-                    if (a.Sex == "F" && a.HasEmergencyContact == "1")
-                        return true;
-                }
-                */
-
                 return false;
             });
+
+            var split = _context.Data.TrainTestSplit(data, testFraction: 0.05, seed: 0);
+            var trainingData = split.TrainSet;
+            var testData = split.TestSet;
 
             double? best = null;
             while (true)
@@ -101,6 +87,30 @@ namespace MLNet.Noshow
                     Console.WriteLine($"Best model is still {best.Value:P2}");
                 }
             }
+        }
+
+        /// <summary>
+        /// Undersampling can be used to balance the data better, but at the cost of under representing
+        /// the data that will be encountered in the real world.  Be careful to use it only against training 
+        /// data and not your test set.
+        /// </summary>
+        private IDataView UndersampleShows(IDataView data)
+        {
+            return _context.Data.FilterByCustomPredicate<AppointmentInput>(data, a =>
+            {
+                if (a.ShowNoShow == 1)
+                {
+                    var date = DateTime.Parse(a.AppointmentDate);
+                    if (date.DayOfWeek == DayOfWeek.Monday || date.DayOfWeek == DayOfWeek.Thursday || date.DayOfWeek == DayOfWeek.Saturday)
+                        return true;
+                    if (a.ClientKey.Contains("A") || a.ClientKey.Contains("1") || a.ClientKey.Contains("3") || a.ClientKey.Contains("5") || a.ClientKey.Contains("7"))
+                        return true;
+                    if (a.Sex == "F" && a.HasEmergencyContact == "1")
+                        return true;
+                }
+
+                return false;
+            });
         }
 
         private EstimatorChain<ISingleFeaturePredictionTransformer<T>> CreatePipeline<T>(ITrainerEstimator<ISingleFeaturePredictionTransformer<T>, T> trainer)
@@ -156,7 +166,7 @@ namespace MLNet.Noshow
             var predictions = model.Transform(testData);
             var metrics = _context.BinaryClassification.Evaluate(predictions);
             ConsoleHelper.Print(modelName, metrics);
-            return metrics.F1Score;
+            return metrics.PositivePrecision;
         }
 
         private void SaveModel(DataViewSchema schema, ITransformer model)
