@@ -45,8 +45,12 @@ namespace MLNet.Noshow
         {
             var data = GetData();
 
+            var split = _context.Data.TrainTestSplit(data, testFraction: 0.05, seed: 0);
+            var trainingData = split.TrainSet;
+            var testData = split.TestSet;
+
             // Filter out cancelled appointments
-            data = _context.Data.FilterByCustomPredicate<AppointmentInput>(data, a =>
+            trainingData = _context.Data.FilterByCustomPredicate<AppointmentInput>(trainingData, a =>
             {
                 if (a.ShowNoShow != 1 && a.ShowNoShow != 2)
                     return true;
@@ -54,33 +58,29 @@ namespace MLNet.Noshow
                 if (a.Sex != "M" && a.Sex != "F")
                     return true;
 
+                /*
                 // Balance number of shows and no-shows using features we know don't normally matter
                 if (a.ShowNoShow == 1)
                 {
                     var date = DateTime.Parse(a.AppointmentDate);
                     if (date.DayOfWeek == DayOfWeek.Monday || date.DayOfWeek == DayOfWeek.Thursday || date.DayOfWeek == DayOfWeek.Saturday)
                         return true;
-
                     if (a.ClientKey.Contains("A") || a.ClientKey.Contains("1") || a.ClientKey.Contains("3") || a.ClientKey.Contains("5") || a.ClientKey.Contains("7"))
                         return true;
-
                     if (a.Sex == "F" && a.HasEmergencyContact == "1")
                         return true;
                 }
+                */
 
                 return false;
             });
-
-            var split = _context.Data.TrainTestSplit(data, testFraction: 0.05, seed: 0);
-            var trainingData = split.TrainSet;
-            var testData = split.TestSet;
 
             double? best = null;
             while (true)
             {
                 var trainer = _context.BinaryClassification.Trainers.SdcaLogisticRegression(new SdcaLogisticRegressionBinaryTrainer.Options
                 {
-                    NumberOfThreads = 1, // Ensure deterministic results
+                    NumberOfThreads = 1, // Use 1 to ensure deterministic results
                     L1Regularization = 0.005f,
                 });
 
@@ -94,7 +94,7 @@ namespace MLNet.Noshow
                 {
                     best = f1;
                     SaveModel(trainingData.Schema, model);
-                    Console.WriteLine("Saved new model");
+                    Console.WriteLine($"Saved new model at {best.Value:P2}");
                 }
                 else if (best.HasValue)
                 {
@@ -137,6 +137,12 @@ namespace MLNet.Noshow
             //ConsoleHelper.Print(s_allFeatureNames, contributionMetrics, trainsformedData);
 
             return trainedModel;
+        }
+
+        public void Evaluate()
+        {
+            var data = GetData();
+            Evaluate(data);
         }
 
         private void Evaluate(IDataView testData)

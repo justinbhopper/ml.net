@@ -14,7 +14,6 @@ namespace MLNet
             var stopwatch = Stopwatch.StartNew();
             var program = new Test(s_rootPath);
             program.Train();
-            //program.TestModel();
 
             Console.WriteLine($"Total time took {stopwatch.ElapsedMilliseconds / 1000} seconds.");
         }

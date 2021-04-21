@@ -44,9 +44,9 @@ namespace MLNet
             Console.WriteLine($"*       F1Score:           {metrics.F1Score:P2}");
             Console.WriteLine($"*       LogLoss:           {metrics.LogLoss:#.##}");
             Console.WriteLine($"*       LogLossReduction:  {metrics.LogLossReduction:#.##}");
-            Console.WriteLine($"*       PositivePrecision: {metrics.PositivePrecision:#.##}");
-            Console.WriteLine($"*       PositiveRecall:    {metrics.PositiveRecall:#.##}");
-            Console.WriteLine($"*       NegativePrecision: {metrics.NegativePrecision:#.##}");
+            Console.WriteLine($"*       PositivePrecision: {metrics.PositivePrecision:P2}");
+            Console.WriteLine($"*       PositiveRecall:    {metrics.PositiveRecall:P2}");
+            Console.WriteLine($"*       NegativePrecision: {metrics.NegativePrecision:P2}");
             Console.WriteLine($"*       NegativeRecall:    {metrics.NegativeRecall:P2}");
             Console.WriteLine($"*************************************************************************************************************");
             Console.WriteLine();
@@ -61,9 +61,9 @@ namespace MLNet
             Console.WriteLine($"*       AUC:               {metrics.AreaUnderRocCurve:P2}");
             Console.WriteLine($"*       AUC recall Curve:  {metrics.AreaUnderPrecisionRecallCurve:P2}");
             Console.WriteLine($"*       F1Score:           {metrics.F1Score:P2}");
-            Console.WriteLine($"*       PositivePrecision: {metrics.PositivePrecision:#.##}");
-            Console.WriteLine($"*       PositiveRecall:    {metrics.PositiveRecall:#.##}");
-            Console.WriteLine($"*       NegativePrecision: {metrics.NegativePrecision:#.##}");
+            Console.WriteLine($"*       PositivePrecision: {metrics.PositivePrecision:P2}");
+            Console.WriteLine($"*       PositiveRecall:    {metrics.PositiveRecall:P2}");
+            Console.WriteLine($"*       NegativePrecision: {metrics.NegativePrecision:P2}");
             Console.WriteLine($"*       NegativeRecall:    {metrics.NegativeRecall:P2}");
             Console.WriteLine($"*************************************************************************************************************");
             Console.WriteLine();
