@@ -103,8 +103,8 @@ namespace MLNet.Noshow
             }
         }
 
-        private EstimatorChain<T> CreatePipeline<T>(IEstimator<T> trainer)
-            where T : class, ITransformer
+        private EstimatorChain<ISingleFeaturePredictionTransformer<T>> CreatePipeline<T>(ITrainerEstimator<ISingleFeaturePredictionTransformer<T>, T> trainer)
+            where T : class
         {
             var transforms = _context.Transforms;
 
@@ -126,15 +126,15 @@ namespace MLNet.Noshow
                 .Append(trainer);
         }
 
-        private ITransformer CreateModel<T>(EstimatorChain<T> pipeline, IDataView trainingData)
-            where T : class, ITransformer
+        private ITransformer CreateModel<T>(EstimatorChain<ISingleFeaturePredictionTransformer<T>> pipeline, IDataView trainingData)
+            where T : class
         {
             var trainedModel = pipeline.Fit(trainingData);
 
-            //var trainsformedData = trainedModel.Transform(trainingData);
-            //var contributionMetrics = _context.BinaryClassification.PermutationFeatureImportance(trainedModel.LastTransformer, trainsformedData, "Label", numberOfExamplesToUse: 100);
+            var trainsformedData = trainedModel.Transform(trainingData);
+            var contributionMetrics = _context.BinaryClassification.PermutationFeatureImportance(trainedModel.LastTransformer, trainsformedData, "Label", numberOfExamplesToUse: 100);
 
-            //ConsoleHelper.Print(s_allFeatureNames, contributionMetrics, trainsformedData);
+            ConsoleHelper.Print(s_allFeatureNames, contributionMetrics, trainsformedData);
 
             return trainedModel;
         }
