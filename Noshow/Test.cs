@@ -49,20 +49,20 @@ namespace MLNet.Noshow
 
             var split = _context.Data.TrainTestSplit(data, testFraction: 0.2, seed: 0);
 
-            var pipeline = CreatePrefeaturizedPipeline();
-
             var experimentSettings = new BinaryExperimentSettings
             {
                 MaxExperimentTimeInSeconds = 45 * 60,
                 OptimizingMetric = BinaryClassificationMetric.F1Score,
             };
 
+            experimentSettings.Trainers.Clear();
+            experimentSettings.Trainers.Add(BinaryClassificationTrainer.LightGbm);
+
             var experiment = _context.Auto().CreateBinaryClassificationExperiment(experimentSettings);
 
             var experimentResult = experiment.Execute(
                 trainData: split.TrainSet,
                 validationData: split.TestSet,
-                //preFeaturizer: pipeline,
                 labelColumnName: nameof(Appointment.NoShow),
                 progressHandler: new ProgressHandler());
 
@@ -86,7 +86,6 @@ namespace MLNet.Noshow
             double? best = null;
             while (true)
             {
-
                 var trainer = _context.BinaryClassification.Trainers.LightGbm(new LightGbmBinaryTrainer.Options
                 {
                     NumberOfThreads = 1, // Use 1 to ensure deterministic results
@@ -95,7 +94,7 @@ namespace MLNet.Noshow
 
                 var pipeline = CreatePipeline(trainer);
 
-                var model = CreateModel(pipeline, trainingData);
+                var model = pipeline.Fit(trainingData);
 
                 var f1 = Evaluate("Test", model, testData);
 
@@ -138,12 +137,8 @@ namespace MLNet.Noshow
 
         private IEstimator<ITransformer> CreatePrefeaturizedPipeline()
         {
-            var transforms = _context.Transforms;
-
-            return transforms.CopyColumns("Label", nameof(Appointment.NoShow))
-
-                // Put age into separate bins
-                .Append(transforms.NormalizeBinning("AgeBinned", nameof(Appointment.Age), maximumBinCount: 10));
+            // Put age into separate bins
+            return _context.Transforms.NormalizeBinning("AgeBinned", nameof(Appointment.Age), maximumBinCount: 10);
         }
 
         private IEstimator<ITransformer> CreatePipeline()
@@ -153,6 +148,8 @@ namespace MLNet.Noshow
             var encodedColumns = s_categoryColumns.Select(name => new InputOutputColumnPair(name + "Encoded", name)).ToArray();
 
             return CreatePrefeaturizedPipeline()
+
+                .Append(transforms.CopyColumns("Label", nameof(Appointment.NoShow)))
 
                 //.Append(transforms.Categorical.OneHotEncoding(encodedColumns, OneHotEncodingEstimator.OutputKind.Indicator))
 
@@ -166,19 +163,6 @@ namespace MLNet.Noshow
             where T : class
         {
             return CreatePipeline().Append(trainer);
-        }
-
-        private ITransformer CreateModel<T>(EstimatorChain<ISingleFeaturePredictionTransformer<T>> pipeline, IDataView trainingData)
-            where T : class
-        {
-            var trainedModel = pipeline.Fit(trainingData);
-
-            var trainsformedData = trainedModel.Transform(trainingData);
-            var contributionMetrics = _context.BinaryClassification.PermutationFeatureImportance(trainedModel.LastTransformer, trainsformedData, "Label", numberOfExamplesToUse: 100);
-
-            ConsoleHelper.Print(s_allFeatureNames, contributionMetrics, trainsformedData);
-
-            return trainedModel;
         }
 
         public void Evaluate()
@@ -195,8 +179,21 @@ namespace MLNet.Noshow
 
         private double Evaluate(string modelName, ITransformer model, IDataView testData)
         {
+            var castedModel = model as TransformerChain<ITransformer>;
+            if (castedModel is not null)
+            {
+                var castedTransformer = castedModel.LastTransformer as BinaryPredictionTransformer<CalibratedModelParametersBase<LightGbmBinaryModelParameters, PlattCalibrator>>;
+                if (castedTransformer is not null)
+                {
+                    var trainsformedData = castedModel.Transform(testData);
+                    var contributionMetrics = _context.BinaryClassification.PermutationFeatureImportance(castedTransformer, trainsformedData, nameof(Appointment.NoShow), numberOfExamplesToUse: 100);
+
+                    ConsoleHelper.Print(s_allFeatureNames, contributionMetrics, trainsformedData);
+                }
+            }
+
             var predictions = model.Transform(testData);
-            var metrics = _context.BinaryClassification.EvaluateNonCalibrated(predictions);
+            var metrics = _context.BinaryClassification.EvaluateNonCalibrated(predictions, labelColumnName: nameof(Appointment.NoShow));
             ConsoleHelper.Print(modelName, metrics);
             return metrics.F1Score;
         }
