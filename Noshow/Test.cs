@@ -246,12 +246,11 @@ namespace MLNet.Noshow
             _context.Model.Save(model, schema, _modelSavePath);
         }
 
-        private void Predict(PredictionEngine<Appointment, NoShowPrediction> predictionEngine, string description, Appointment sample)
+        private void Predict(PredictionEngine<AppointmentInput, NoShowPrediction> predictionEngine, string description, AppointmentInput sample)
         {
             var prediction = predictionEngine.Predict(sample);
 
-            Console.Write($"Sample: {description,-20} Result: {prediction.NoShow,-10} Probability: {prediction.Probability,-10}");
-            Console.WriteLine();
+            Console.WriteLine($"Sample: {description,-20} Predicted: {prediction.NoShow,-5} Actual: {sample.ShowNoShow == 2,-5} Probability: {prediction.Probability,-10:P2}");
         }
 
         private IDataView GetData()

@@ -10,7 +10,5 @@ namespace MLNet.NoshowV2
         public float Probability { get; set; }
 
         public float Score { get; set; }
-
-        public float[] FeatureContributions { get; set; }
     }
 }

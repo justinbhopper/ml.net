@@ -8,6 +8,7 @@ using Microsoft.ML.Data;
 using Microsoft.ML.Trainers;
 using Microsoft.ML.Trainers.FastTree;
 using Microsoft.ML.Trainers.LightGbm;
+using Newtonsoft.Json;
 
 namespace MLNet.NoshowV2
 {
@@ -16,26 +17,26 @@ namespace MLNet.NoshowV2
         private static readonly IList<string> s_columns = new[]
         {
             nameof(Appointment.Age),
-            nameof(Appointment.DayOfWeek),
-            nameof(Appointment.HasEmergencyContact),
-            nameof(Appointment.Hour),
-            nameof(Appointment.IsFirstInRecurrence),
-            nameof(Appointment.IsRecurring),
-            nameof(Appointment.LastAppointmentNoShow),
-            nameof(Appointment.LastAppointmentScripts),
+            //nameof(Appointment.DayOfWeek),
+            //nameof(Appointment.HasEmergencyContact),
+            //nameof(Appointment.Hour),
+            //nameof(Appointment.IsFirstInRecurrence),
+            //nameof(Appointment.IsRecurring),
+            //nameof(Appointment.LastAppointmentNoShow),
+            //nameof(Appointment.LastAppointmentScripts),
             nameof(Appointment.LeadTime),
-            nameof(Appointment.Male),
-            nameof(Appointment.Minutes),
-            nameof(Appointment.Month),
+            //nameof(Appointment.Male),
+            //nameof(Appointment.Minutes),
+            //nameof(Appointment.Month),
             nameof(Appointment.NoShowRatio),
-            nameof(Appointment.OMBAmericanIndian),
-            nameof(Appointment.OMBAsian),
-            nameof(Appointment.OMBBlack),
-            nameof(Appointment.OMBHawaiian),
-            nameof(Appointment.OMBWhite),
-            nameof(Appointment.PreviousNoShows),
+            //nameof(Appointment.OMBAmericanIndian),
+            //nameof(Appointment.OMBAsian),
+            //nameof(Appointment.OMBBlack),
+            //nameof(Appointment.OMBHawaiian),
+            //nameof(Appointment.OMBWhite),
+            //nameof(Appointment.PreviousNoShows),
             nameof(Appointment.TotalScheduled),
-            nameof(Appointment.Week),
+            //nameof(Appointment.Week),
         };
 
         private static readonly IList<string> s_binnedColumns = new string[]
@@ -81,8 +82,8 @@ namespace MLNet.NoshowV2
         public Test(string rootPath)
         {
             _modelSavePath = Path.Combine(rootPath, "noshowv2", "model.zip");
-            _dataPath = Path.Combine(rootPath, "noshowv2", "data_hmhcks.tsv");
-            _validatePath = Path.Combine(rootPath, "noshowv2", "data_pmhcks.tsv");
+            _dataPath = Path.Combine(rootPath, "noshowv2", "data_hmhcks_weighted.tsv");
+            _validatePath = Path.Combine(rootPath, "noshowv2", "data_pmhcks_weighted.tsv");
             _context = new MLContext(seed: 0);
         }
 
@@ -93,15 +94,22 @@ namespace MLNet.NoshowV2
 
             var experimentSettings = new BinaryExperimentSettings
             {
-                MaxExperimentTimeInSeconds = 60 * 60,
+                MaxExperimentTimeInSeconds = 45 * 60,
                 OptimizingMetric = BinaryClassificationMetric.F1Score,
             };
-            
+
+            experimentSettings.Trainers.Clear();
+            experimentSettings.Trainers.Add(BinaryClassificationTrainer.LightGbm);
+
             var experiment = _context.Auto().CreateBinaryClassificationExperiment(experimentSettings);
 
             var experimentResult = experiment.Execute(
                 trainData: data,
                 validationData: validate,
+                columnInformation: new ColumnInformation
+                {
+                    ExampleWeightColumnName = nameof(Appointment.Weight)
+                },
                 progressHandler: new ProgressHandler());
 
             Console.WriteLine("Experiment completed");
@@ -115,38 +123,34 @@ namespace MLNet.NoshowV2
 
         public void Train()
         {
-            var data = GetData(_dataPath);
+            var trainingData = GetData(_dataPath);
+            var testData = GetData(_validatePath);
 
-            var split = _context.Data.TrainTestSplit(data, testFraction: 0.5, seed: 0);
-            var trainingData = split.TrainSet;
-            var testData = split.TestSet;
-
-            double? best = null;
+            double? bestScore = null;
             while (true)
             {
-                var trainer = _context.BinaryClassification.Trainers.LightGbm(new LightGbmBinaryTrainer.Options
+                var options = new LightGbmBinaryTrainer.Options
                 {
+                    ExampleWeightColumnName = nameof(Appointment.Weight),
                     EvaluationMetric = LightGbmBinaryTrainer.Options.EvaluateMetricType.Logloss,
-                    Sigmoid = 0.5,
+                    Sigmoid = 1,
                     CategoricalSmoothing = 10,
-                    L2CategoricalRegularization = 0.1,
+                    L2CategoricalRegularization = 10,
                     MaximumCategoricalSplitPointCount = 8,
                     MinimumExampleCountPerLeaf = 1,
-                    WeightOfPositiveExamples = 10,
-                    MaximumBinCountPerFeature = 255,
-                    Seed = 71756196,
-                    Verbose = true,
+                    WeightOfPositiveExamples = 2,
+                    MaximumBinCountPerFeature = 200,
+                    Seed = 459933621,
                     HandleMissingValue = true,
                     UseZeroAsMissingValue = false,
-                    MinimumExampleCountPerGroup = 50,
-                    NumberOfIterations = 1000,
-                    LearningRate = 0.2,
-                    UseCategoricalSplit = true,
-                    NumberOfLeaves = 118,
-                    Booster = new DartBooster.Options
+                    MinimumExampleCountPerGroup = 100,
+                    NumberOfIterations = 200,
+                    LearningRate = 0.01,
+                    NumberOfLeaves = 110,
+                    Booster = new GradientBooster.Options
                     {
                         L1Regularization = 0,
-                        L2Regularization = 1,
+                        L2Regularization = 0,
                         MaximumTreeDepth = 0,
                         SubsampleFrequency = 0,
                         SubsampleFraction = 1,
@@ -154,7 +158,9 @@ namespace MLNet.NoshowV2
                         MinimumChildWeight = 0.1,
                         MinimumSplitGain = 0,
                     }
-                });
+                };
+
+                var trainer = _context.BinaryClassification.Trainers.LightGbm(options);
 
                 var pipeline = CreatePipeline(trainer);
 
@@ -162,15 +168,15 @@ namespace MLNet.NoshowV2
 
                 var f1 = Evaluate("Test", model, testData);
 
-                if (!best.HasValue || f1 > best.Value)
+                if (!bestScore.HasValue || f1 > bestScore.Value)
                 {
-                    best = f1;
+                    bestScore = f1;
                     SaveModel(trainingData.Schema, model);
-                    Console.WriteLine($"Saved new model at {best.Value:P2}");
+                    Console.WriteLine($"Saved new model at {bestScore.Value:P2}");
                 }
-                else if (best.HasValue)
+                else if (bestScore.HasValue)
                 {
-                    Console.WriteLine($"Best model is still {best.Value:P2}");
+                    Console.WriteLine($"Best model is still {bestScore.Value:P2}");
                 }
             }
         }
@@ -184,7 +190,7 @@ namespace MLNet.NoshowV2
             var binnedColumns = s_binnedColumns.Where(s_columns.Contains).Select(name => new InputOutputColumnPair(name + "Binned", name)).ToArray();
             var categoryColumns = s_categoryColumns.Where(s_columns.Contains).Select(name => new InputOutputColumnPair(name + "Encoded", name)).ToArray();
 
-            IEstimator<ITransformer> pipeline = transforms.Conversion.ConvertType(boolColumns, DataKind.Single);
+            IEstimator<ITransformer> pipeline = transforms.NormalizeBinning(binnedColumns);
 
             if (vectorColumns.Length > 0)
             {
@@ -196,8 +202,8 @@ namespace MLNet.NoshowV2
             if (categoryColumns.Length > 0)
                 pipeline = pipeline.Append(transforms.Categorical.OneHotEncoding(categoryColumns));
 
-            if (binnedColumns.Length > 0)
-                pipeline = pipeline.Append(transforms.NormalizeBinning(binnedColumns));
+            if (boolColumns.Length > 0)
+                pipeline = pipeline.Append(transforms.Conversion.ConvertType(boolColumns, DataKind.Single));
 
             return pipeline
 
@@ -217,6 +223,63 @@ namespace MLNet.NoshowV2
         {
             var data = GetData(_dataPath);
             Evaluate(data);
+        }
+
+        public void Predict()
+        {
+            var model = _context.Model.Load(_modelSavePath, out var schema);
+            var engine = _context.Model.CreatePredictionEngine<Appointment, NoShowPrediction>(model, schema);
+            Predict(engine, "No-show 1", new Appointment
+            {
+                NoShow = true,
+                LeadTime = 20,
+                DayOfWeek = 3,
+                Month = 4,
+                Week = 17,
+                Hour = 0,
+                Minutes = 60,
+                IsRecurring = true,
+                IsFirstInRecurrence = false,
+                Age = 10,
+                Male = true,
+                OMBWhite = false,
+                OMBAmericanIndian = false,
+                OMBAsian = false,
+                OMBBlack = false,
+                OMBHawaiian = false,
+                HasEmergencyContact = true,
+                LastAppointmentNoShow = false,
+                PreviousNoShows = 5,
+                TotalScheduled = 70,
+                NoShowRatio = 0.07142857f,
+                LastAppointmentScripts = 2,
+            });
+
+            Predict(engine, "Show 1", new Appointment
+            {
+                NoShow = false,
+                LeadTime = 8,
+                DayOfWeek = 5,
+                Month = 4,
+                Week = 15,
+                Hour = 0,
+                Minutes = 60,
+                IsRecurring = true,
+                IsFirstInRecurrence = false,
+                Age = 35,
+                Male = true,
+                OMBWhite = false,
+                OMBAmericanIndian = false,
+                OMBAsian = false,
+                OMBBlack = false,
+                OMBHawaiian = false,
+                HasEmergencyContact = true,
+                LastAppointmentNoShow = false,
+                PreviousNoShows = 3,
+                TotalScheduled = 13,
+                NoShowRatio = 0.23076923f,
+                LastAppointmentScripts = 0,
+            });
         }
 
         private void Evaluate(IDataView testData)
@@ -242,8 +305,7 @@ namespace MLNet.NoshowV2
         {
             var prediction = predictionEngine.Predict(sample);
 
-            Console.Write($"Sample: {description,-20} Result: {prediction.NoShow,-10} Probability: {prediction.Probability,-10}");
-            Console.WriteLine();
+            Console.WriteLine($"Sample: {description,-20} Predicted: {prediction.NoShow,-5} Actual: {sample.NoShow,-5} Probability: {prediction.Probability,-10:P2}");
         }
 
         private IDataView GetData(string path)

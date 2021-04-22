@@ -2,6 +2,8 @@ https://scholar.smu.edu/cgi/viewcontent.cgi?article=1059&context=datasciencerevi
 https://www.linkedin.com/pulse/how-predict-no-show-analysis-appointment-rates-brazilian-burns/
 https://journalofbigdata.springeropen.com/articles/10.1186/s40537-020-00384-9
 https://www.ideas2it.com/blogs/patient-appointment-no-shows-prediction/
+https://medium.com/docplanner-tech/predicting-cancellations-in-visit-by-appointment-systems-with-tensorflow-d6b78f8621ff
+https://github.com/adelweiss/MedicalAppt
 
 select
 	case a.ShowNoShow when 2 then 1 else 0 end as NoShow,
@@ -9,7 +11,7 @@ select
 	datepart(weekday, a.AppointmentDate) as DayOfWeek,
 	datepart(month, a.AppointmentDate) as Month,
 	datepart(WEEK, a.AppointmentDate) as Week,
-	datepart(hour, a.AppointmentDate) as Hour,
+	datepart(hour, a.AppointmentTime) as Hour,
 	l.Minutes,
 	case when a.RecFirstKey is null then 1 else 0 end as IsRecurring,
 	case when a.RecFirstKey = a.ID then 1 else 0 end as IsFirstInRecurrence,
