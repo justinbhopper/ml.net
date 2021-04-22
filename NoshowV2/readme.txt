@@ -6,6 +6,10 @@ https://www.ideas2it.com/blogs/patient-appointment-no-shows-prediction/
 select
 	case a.ShowNoShow when 2 then 1 else 0 end as NoShow,
 	datediff(day, a.CreateDate, a.AppointmentDate) as LeadTime,
+	datepart(weekday, a.AppointmentDate) as DayOfWeek,
+	datepart(month, a.AppointmentDate) as Month,
+	datepart(WEEK, a.AppointmentDate) as Week,
+	datepart(hour, a.AppointmentDate) as Hour,
 	l.Minutes,
 	case when a.RecFirstKey is null then 1 else 0 end as IsRecurring,
 	case when a.RecFirstKey = a.ID then 1 else 0 end as IsFirstInRecurrence,

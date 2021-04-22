@@ -11,51 +11,63 @@ namespace MLNet.NoshowV2
         public float LeadTime { get; set; }
 
         [LoadColumn(2)]
-        public float Minutes { get; set; }
+        public float DayOfWeek { get; set; }
 
         [LoadColumn(3)]
-        public bool IsRecurring { get; set; }
+        public float Month { get; set; }
 
         [LoadColumn(4)]
-        public bool IsFirstInRecurrence { get; set; }
+        public float Week { get; set; }
 
         [LoadColumn(5)]
-        public float Age { get; set; }
+        public float Hour { get; set; }
 
         [LoadColumn(6)]
-        public bool Male { get; set; }
+        public float Minutes { get; set; }
 
         [LoadColumn(7)]
-        public bool OMBWhite { get; set; }
+        public bool IsRecurring { get; set; }
 
         [LoadColumn(8)]
-        public bool OMBAmericanIndian { get; set; }
+        public bool IsFirstInRecurrence { get; set; }
 
         [LoadColumn(9)]
-        public bool OMBAsian { get; set; }
+        public float Age { get; set; }
 
         [LoadColumn(10)]
-        public bool OMBBlack { get; set; }
+        public bool Male { get; set; }
 
         [LoadColumn(11)]
-        public bool OMBHawaiian { get; set; }
+        public bool OMBWhite { get; set; }
 
         [LoadColumn(12)]
-        public bool HasEmergencyContact { get; set; }
+        public bool OMBAmericanIndian { get; set; }
 
         [LoadColumn(13)]
-        public bool LastAppointmentNoShow { get; set; }
+        public bool OMBAsian { get; set; }
 
         [LoadColumn(14)]
-        public float PreviousNoShows { get; set; }
+        public bool OMBBlack { get; set; }
 
         [LoadColumn(15)]
-        public float TotalScheduled { get; set; }
+        public bool OMBHawaiian { get; set; }
 
         [LoadColumn(16)]
-        public float NoShowRatio { get; set; }
+        public bool HasEmergencyContact { get; set; }
 
         [LoadColumn(17)]
+        public bool LastAppointmentNoShow { get; set; }
+
+        [LoadColumn(18)]
+        public float PreviousNoShows { get; set; }
+
+        [LoadColumn(19)]
+        public float TotalScheduled { get; set; }
+
+        [LoadColumn(20)]
+        public float NoShowRatio { get; set; }
+
+        [LoadColumn(21)]
         public float LastAppointmentScripts { get; set; }
     }
 }

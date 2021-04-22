@@ -82,7 +82,7 @@ namespace MLNet.Noshow
         public Test(string rootPath)
         {
             _modelSavePath = Path.Combine(rootPath, "noshow", "model.zip");
-            _dataPath = Path.Combine(rootPath, "noshow", "data_hmhcks.tsv");
+            _dataPath = Path.Combine(rootPath, "noshow", "data_pmhcks.tsv");
             _context = new MLContext(seed: 0);
         }
 
@@ -147,6 +147,7 @@ namespace MLNet.Noshow
                     MinimumExampleCountPerGroup = 50,
                     UnbalancedSets = false,
                     LearningRate = 0.3669092357158661,
+                    UseCategoricalSplit = true,
                     NumberOfLeaves = 118,
                     Booster = new GradientBooster.Options
                     {
