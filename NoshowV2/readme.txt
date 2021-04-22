@@ -7,6 +7,7 @@ https://github.com/adelweiss/MedicalAppt
 
 select
 	case a.ShowNoShow when 2 then 1 else 0 end as NoShow,
+	case when a.ShowNoShow when 2 then 3 else 1 end as Weight,
 	datediff(day, a.CreateDate, a.AppointmentDate) as LeadTime,
 	datepart(weekday, a.AppointmentDate) as DayOfWeek,
 	datepart(month, a.AppointmentDate) as Month,
