@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
-using MLNet.Noshow;
+using MLNet.NoshowV2;
 
 namespace MLNet
 {
@@ -13,7 +13,7 @@ namespace MLNet
         {
             var stopwatch = Stopwatch.StartNew();
             var program = new Test(s_rootPath);
-            program.Evaluate();
+            program.Train();
 
             Console.WriteLine($"Total time took {stopwatch.ElapsedMilliseconds / 1000} seconds.");
         }

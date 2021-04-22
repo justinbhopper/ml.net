@@ -8,30 +8,22 @@ using Microsoft.ML.Calibrators;
 using Microsoft.ML.Data;
 using Microsoft.ML.Trainers;
 using Microsoft.ML.Trainers.LightGbm;
-using Microsoft.ML.Transforms;
 
-namespace MLNet.Noshow
+namespace MLNet.NoshowV2
 {
     public class Test
     {
         private static readonly IList<string> s_columns = new[]
         {
-            nameof(AppointmentInput.ShowTime),
             nameof(Appointment.Age),
-            nameof(Appointment.Cancelled),
-            nameof(Appointment.CDCCode),
-            nameof(Appointment.DayOfWeek),
-            nameof(Appointment.DayOfYear),
             nameof(Appointment.HasEmergencyContact),
-            nameof(Appointment.Hour),
-            nameof(Appointment.IsFirstAppt),
             nameof(Appointment.IsFirstInRecurrence),
             nameof(Appointment.IsRecurring),
             nameof(Appointment.LastAppointmentNoShow),
             nameof(Appointment.LastAppointmentScripts),
             nameof(Appointment.LeadTime),
+            nameof(Appointment.Male),
             nameof(Appointment.Minutes),
-            nameof(Appointment.Month),
             nameof(Appointment.NoShowRatio),
             nameof(Appointment.OMBAmericanIndian),
             nameof(Appointment.OMBAsian),
@@ -39,30 +31,16 @@ namespace MLNet.Noshow
             nameof(Appointment.OMBHawaiian),
             nameof(Appointment.OMBWhite),
             nameof(Appointment.PreviousNoShows),
-            nameof(Appointment.Season),
-            nameof(Appointment.Sex),
             nameof(Appointment.TotalScheduled),
-            nameof(Appointment.Week),
-        };
-
-        private static readonly IList<string> s_vectorColumns = new string[]
-        {
-            nameof(AppointmentInput.ShowTime),
-        };
-
-        private static readonly IList<string> s_categoryColumns = new string[]
-        {
-            nameof(Appointment.CDCCode),
-            nameof(Appointment.Sex),
         };
 
         private static readonly IList<string> s_boolColumns = new string[]
         {
             nameof(Appointment.HasEmergencyContact),
-            nameof(Appointment.IsFirstAppt),
             nameof(Appointment.IsFirstInRecurrence),
             nameof(Appointment.IsRecurring),
             nameof(Appointment.LastAppointmentNoShow),
+            nameof(Appointment.Male),
             nameof(Appointment.OMBAmericanIndian),
             nameof(Appointment.OMBAsian),
             nameof(Appointment.OMBBlack),
@@ -71,7 +49,7 @@ namespace MLNet.Noshow
         };
 
         private static readonly string[] s_allFeatureNames = s_columns
-            .Select(name => (s_boolColumns.Contains(name) || s_categoryColumns.Contains(name)) ? name + "Encoded" : name)
+            .Select(name => s_boolColumns.Contains(name) ? name + "Encoded" : name)
             .ToArray();
 
         private readonly string _modelSavePath;
@@ -81,8 +59,8 @@ namespace MLNet.Noshow
 
         public Test(string rootPath)
         {
-            _modelSavePath = Path.Combine(rootPath, "noshow", "model.zip");
-            _dataPath = Path.Combine(rootPath, "noshow", "data_hmhcks.tsv");
+            _modelSavePath = Path.Combine(rootPath, "noshowv2", "model.zip");
+            _dataPath = Path.Combine(rootPath, "noshowv2", "data_hmhcks.tsv");
             _context = new MLContext(seed: 0);
         }
 
@@ -97,7 +75,7 @@ namespace MLNet.Noshow
                 MaxExperimentTimeInSeconds = 45 * 60,
                 OptimizingMetric = BinaryClassificationMetric.F1Score,
             };
-
+            
             experimentSettings.Trainers.Clear();
             experimentSettings.Trainers.Add(BinaryClassificationTrainer.LightGbm);
 
@@ -106,7 +84,6 @@ namespace MLNet.Noshow
             var experimentResult = experiment.Execute(
                 trainData: split.TrainSet,
                 validationData: split.TestSet,
-                labelColumnName: nameof(Appointment.NoShow),
                 progressHandler: new ProgressHandler());
 
             Console.WriteLine("Experiment completed");
@@ -122,7 +99,7 @@ namespace MLNet.Noshow
         {
             var data = GetData();
 
-            var split = _context.Data.TrainTestSplit(data, testFraction: 0.2, seed: 0);
+            var split = _context.Data.TrainTestSplit(data, testFraction: 0.05, seed: 0);
             var trainingData = split.TrainSet;
             var testData = split.TestSet;
 
@@ -131,7 +108,6 @@ namespace MLNet.Noshow
             {
                 var trainer = _context.BinaryClassification.Trainers.LightGbm(new LightGbmBinaryTrainer.Options
                 {
-                    LabelColumnName = nameof(Appointment.NoShow),
                     EvaluationMetric = LightGbmBinaryTrainer.Options.EvaluateMetricType.Logloss,
                     Sigmoid = 0.5,
                     CategoricalSmoothing = 10,
@@ -145,7 +121,7 @@ namespace MLNet.Noshow
                     HandleMissingValue = true,
                     UseZeroAsMissingValue = false,
                     MinimumExampleCountPerGroup = 50,
-                    UnbalancedSets = false,
+                    UnbalancedSets = true,
                     LearningRate = 0.3669092357158661,
                     NumberOfLeaves = 118,
                     Booster = new GradientBooster.Options
@@ -185,15 +161,8 @@ namespace MLNet.Noshow
             var transforms = _context.Transforms;
 
             var boolColumns = s_boolColumns.Select(name => new InputOutputColumnPair(name + "Encoded", name)).ToArray();
-            var categoryColumns = s_categoryColumns.Select(name => new InputOutputColumnPair(name + "Encoded", name)).ToArray();
-            var vectorColumns = s_vectorColumns.Select(name => new InputOutputColumnPair(name, name)).ToArray();
 
             return transforms.Conversion.ConvertType(boolColumns, DataKind.Single)
-
-                .Append(transforms.Categorical.OneHotEncoding(categoryColumns))
-
-                .Append(transforms.Conversion.MapValueToKey(vectorColumns))
-                .Append(transforms.Conversion.MapKeyToVector(vectorColumns))
 
                 // Combine data into Features
                 .Append(transforms.Concatenate("Features", s_allFeatureNames))
@@ -221,21 +190,8 @@ namespace MLNet.Noshow
 
         private double Evaluate(string modelName, ITransformer model, IDataView testData)
         {
-            var castedModel = model as TransformerChain<ITransformer>;
-            if (castedModel is not null)
-            {
-                var castedTransformer = castedModel.LastTransformer as BinaryPredictionTransformer<CalibratedModelParametersBase<LightGbmBinaryModelParameters, PlattCalibrator>>;
-                if (castedTransformer is not null)
-                {
-                    var trainsformedData = castedModel.Transform(testData);
-                    var contributionMetrics = _context.BinaryClassification.PermutationFeatureImportance(castedTransformer, trainsformedData, nameof(Appointment.NoShow), numberOfExamplesToUse: 100);
-
-                    ConsoleHelper.Print(s_allFeatureNames, contributionMetrics, trainsformedData);
-                }
-            }
-
             var predictions = model.Transform(testData);
-            var metrics = _context.BinaryClassification.EvaluateNonCalibrated(predictions, labelColumnName: nameof(Appointment.NoShow));
+            var metrics = _context.BinaryClassification.EvaluateNonCalibrated(predictions);
             ConsoleHelper.Print(modelName, metrics);
             return metrics.F1Score;
         }
@@ -255,28 +211,10 @@ namespace MLNet.Noshow
 
         private IDataView GetData()
         {
-            var data = _context.Data.LoadFromTextFile<AppointmentInput>(_dataPath, new TextLoader.Options
+            return _context.Data.LoadFromTextFile<Appointment>(_dataPath, new TextLoader.Options
             {
                 HasHeader = true,
             });
-
-            // Filter out cancelled appointments
-            data = _context.Data.FilterByCustomPredicate<AppointmentInput>(data, a =>
-            {
-                if (a.ShowNoShow != 1 && a.ShowNoShow != 2)
-                    return true;
-
-                if (a.Sex != "M" && a.Sex != "F")
-                    return true;
-
-                return false;
-            });
-
-            // Transform the data
-            var transformer = _context.Transforms.CustomMapping(new AppointmentFactory().GetMapping(), contractName: "Appointment")
-                .Append(_context.Transforms.DropColumns(nameof(AppointmentInput.ShowNoShow)));
-
-            return transformer.Fit(data).Transform(data);
         }
 
         private class ProgressHandler : IProgress<RunDetail<BinaryClassificationMetrics>>

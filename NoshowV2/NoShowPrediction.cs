@@ -1,6 +1,6 @@
 ﻿using Microsoft.ML.Data;
 
-namespace MLNet.SimulatedNoshow
+namespace MLNet.NoshowV2
 {
     public class NoShowPrediction
     {
