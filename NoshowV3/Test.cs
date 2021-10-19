@@ -68,11 +68,12 @@ namespace MLNet.NoshowV3
 
             var experimentSettings = new BinaryExperimentSettings
             {
-                MaxExperimentTimeInSeconds = 45 * 60,
+                MaxExperimentTimeInSeconds = 5 * 60,
                 OptimizingMetric = BinaryClassificationMetric.F1Score,
             };
 
             experimentSettings.Trainers.Clear();
+            experimentSettings.Trainers.Add(BinaryClassificationTrainer.AveragedPerceptron);
             experimentSettings.Trainers.Add(BinaryClassificationTrainer.LightGbm);
 
             var experiment = _context.Auto().CreateBinaryClassificationExperiment(experimentSettings);
@@ -140,11 +141,11 @@ namespace MLNet.NoshowV3
 
                 var model = pipeline.Fit(trainingData);
 
-                var f1 = Evaluate("Test", model, testData);
+                var score = Evaluate("Test", model, testData);
 
-                if (!bestScore.HasValue || f1 > bestScore.Value)
+                if (!bestScore.HasValue || score > bestScore.Value)
                 {
-                    bestScore = f1;
+                    bestScore = score;
                     SaveModel(trainingData.Schema, model);
                     Console.WriteLine($"Saved new model at {bestScore.Value:P2}");
                 }
@@ -209,8 +210,9 @@ namespace MLNet.NoshowV3
         {
             var predictions = model.Transform(testData);
             var metrics = _context.BinaryClassification.EvaluateNonCalibrated(predictions);
-            ConsoleHelper.Print(modelName, metrics);
-            return metrics.F1Score;
+            var beta = 0.5;
+            ConsoleHelper.Print(modelName, metrics, beta);
+            return metrics.FBeta(beta);
         }
 
         private void SaveModel(DataViewSchema schema, ITransformer model)

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.ML;
 using Microsoft.ML.Data;
+using MLNet.NoshowV3;
 using static Microsoft.ML.TrainCatalogBase;
 
 namespace MLNet
@@ -52,7 +53,7 @@ namespace MLNet
             Console.WriteLine();
         }
 
-        public static void Print(string name, BinaryClassificationMetrics metrics)
+        public static void Print(string name, BinaryClassificationMetrics metrics, double? fBeta = null)
         {
             Console.WriteLine($"*************************************************************************************************************");
             Console.WriteLine($"*       Metrics for {name} binary classification model");
@@ -61,6 +62,7 @@ namespace MLNet
             Console.WriteLine($"*       AUC:               {metrics.AreaUnderRocCurve:P2}");
             Console.WriteLine($"*       AUC recall Curve:  {metrics.AreaUnderPrecisionRecallCurve:P2}");
             Console.WriteLine($"*       F1Score:           {metrics.F1Score:P2}");
+            Console.WriteLine($"*       FBeta:             {(fBeta.HasValue ? metrics.FBeta(fBeta.Value) : metrics.FBeta()):P2}");
             Console.WriteLine($"*       PositivePrecision: {metrics.PositivePrecision:P2}");
             Console.WriteLine($"*       PositiveRecall:    {metrics.PositiveRecall:P2}");
             Console.WriteLine($"*       NegativePrecision: {metrics.NegativePrecision:P2}");

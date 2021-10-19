@@ -1,0 +1,25 @@
+
+No-show confusion matrix:
+True Positive (TP) - Actual=NoShow, Predicted=NoShow
+False Positive (FP) - Actual=Show, Predicted=NoShow
+True Negative (TN) - Actual=Show, Predicted=Show
+False Negative (FN) - Actual=NoShow, Predicted=Show
+
+- Positive Precision - How often is it correct in its prediction of no-show?  A model with a high score might guess everything is a no-show.
+- Positive Recall - How many actual no-shows does it guess correct?  A model with a high score might be too cautious to call something a no-show.
+- Negative Precision - How often is it correct in its prediction of a show?  A model with a high score might guess everything is a show.
+- Negative Recall - How many actual shows does it guess correct?  A model with a high score might be too cautious to call something a show.
+
+Precision is best when the cost of a False Positive is too high.
+Recall is best when the cost of a False Negative is too high.
+Accuracy is best when too many of either False Positives and False Negatives are equally costly.
+
+In terms of no-show prediction, Precision is better because it is not costly if we fail to predict a no-show.
+
+F1 performs better when the distribution of show and no-show are imbalanced.
+
+Accuracy can be a very harmful measure to use when the distributions are imbalanced.  
+e.g. if 1/1000 appts are no-show, you can end up with a 99.9% accurate model that simply always guesses that everything is a show.
+
+
+https://neptune.ai/blog/f1-score-accuracy-roc-auc-pr-auc
