@@ -8,7 +8,6 @@ using Microsoft.ML.Data;
 using Microsoft.ML.Trainers;
 using Microsoft.ML.Trainers.FastTree;
 using Microsoft.ML.Trainers.LightGbm;
-using Newtonsoft.Json;
 
 namespace MLNet.NoshowV3
 {
@@ -33,16 +32,8 @@ namespace MLNet.NoshowV3
             nameof(Appointment.DayOfWeek),
         };
 
-        private static readonly IList<string> s_vectorColumns = new string[]
-        {
-        };
-
-        private static readonly IList<string> s_boolColumns = new string[]
-        {
-        };
-
         private static readonly string[] s_allFeatureNames = s_columns
-            .Select(name => (s_boolColumns.Contains(name) || s_categoryColumns.Contains(name))
+            .Select(name => s_categoryColumns.Contains(name)
                 ? name + "Encoded" 
                 : s_binnedColumns.Contains(name) ? name + "Binned" : name)
             .ToArray();
@@ -108,27 +99,28 @@ namespace MLNet.NoshowV3
                 {
                     //ExampleWeightColumnName = nameof(Appointment.Weight),
                     EvaluationMetric = LightGbmBinaryTrainer.Options.EvaluateMetricType.Logloss,
+                    UnbalancedSets = true,
+                    //WeightOfPositiveExamples = 9,
+                    Seed = 459933621,
                     Sigmoid = 1,
                     CategoricalSmoothing = 10,
                     L2CategoricalRegularization = 10,
                     MaximumCategoricalSplitPointCount = 8,
                     MinimumExampleCountPerLeaf = 1,
-                    WeightOfPositiveExamples = 2,
                     MaximumBinCountPerFeature = 200,
-                    Seed = 459933621,
                     HandleMissingValue = true,
                     UseZeroAsMissingValue = false,
                     MinimumExampleCountPerGroup = 100,
-                    NumberOfIterations = 200,
-                    LearningRate = 0.01,
-                    NumberOfLeaves = 110,
+                    NumberOfIterations = 100,
+                    LearningRate = 0.025,
+                    NumberOfLeaves = 64,
                     Booster = new GradientBooster.Options
                     {
                         L1Regularization = 0,
-                        L2Regularization = 0,
+                        L2Regularization = 0.5,
                         MaximumTreeDepth = 0,
                         SubsampleFrequency = 0,
-                        SubsampleFraction = 1,
+                        SubsampleFraction = 0.5,
                         FeatureFraction = 1,
                         MinimumChildWeight = 0.1,
                         MinimumSplitGain = 0,
@@ -141,7 +133,8 @@ namespace MLNet.NoshowV3
 
                 var model = pipeline.Fit(trainingData);
 
-                var score = Evaluate("Test", model, testData);
+                var beta = 0.5;
+                var score = Evaluate("Test", model, testData, beta).F1Score; // .FBeta(beta);
 
                 if (!bestScore.HasValue || score > bestScore.Value)
                 {
@@ -160,25 +153,13 @@ namespace MLNet.NoshowV3
         {
             var transforms = _context.Transforms;
 
-            var boolColumns = s_boolColumns.Where(s_columns.Contains).Select(name => new InputOutputColumnPair(name + "Encoded", name)).ToArray();
-            var vectorColumns = s_vectorColumns.Where(s_columns.Contains).Select(name => new InputOutputColumnPair(name, name)).ToArray();
             var binnedColumns = s_binnedColumns.Where(s_columns.Contains).Select(name => new InputOutputColumnPair(name + "Binned", name)).ToArray();
             var categoryColumns = s_categoryColumns.Where(s_columns.Contains).Select(name => new InputOutputColumnPair(name + "Encoded", name)).ToArray();
 
             IEstimator<ITransformer> pipeline = transforms.NormalizeBinning(binnedColumns);
 
-            if (vectorColumns.Length > 0)
-            {
-                pipeline = pipeline
-                    .Append(transforms.Conversion.MapValueToKey(vectorColumns))
-                    .Append(transforms.Conversion.MapKeyToVector(vectorColumns));
-            }
-
             if (categoryColumns.Length > 0)
                 pipeline = pipeline.Append(transforms.Categorical.OneHotEncoding(categoryColumns));
-
-            if (boolColumns.Length > 0)
-                pipeline = pipeline.Append(transforms.Conversion.ConvertType(boolColumns, DataKind.Single));
 
             return pipeline
 
@@ -194,37 +175,24 @@ namespace MLNet.NoshowV3
             return CreatePipeline().Append(trainer);
         }
 
-        public void Evaluate()
+        public BinaryClassificationMetrics Evaluate()
         {
-            var data = GetData(_dataPath);
-            Evaluate(data);
-        }
-
-        private void Evaluate(IDataView testData)
-        {
+            var testData = GetData(_validatePath);
             var model = _context.Model.Load(_modelSavePath, out var _);
-            Evaluate("Saved model", model, testData);
+            return Evaluate("Saved model", model, testData);
         }
 
-        private double Evaluate(string modelName, ITransformer model, IDataView testData)
+        private BinaryClassificationMetrics Evaluate(string modelName, ITransformer model, IDataView testData, double beta = 0.5)
         {
             var predictions = model.Transform(testData);
             var metrics = _context.BinaryClassification.EvaluateNonCalibrated(predictions);
-            var beta = 0.5;
             ConsoleHelper.Print(modelName, metrics, beta);
-            return metrics.FBeta(beta);
+            return metrics;
         }
 
         private void SaveModel(DataViewSchema schema, ITransformer model)
         {
             _context.Model.Save(model, schema, _modelSavePath);
-        }
-
-        private void Predict(PredictionEngine<Appointment, NoShowPrediction> predictionEngine, string description, Appointment sample)
-        {
-            var prediction = predictionEngine.Predict(sample);
-
-            Console.WriteLine($"Sample: {description,-20} Predicted: {prediction.NoShow,-5} Actual: {sample.NoShow,-5} Probability: {prediction.Probability,-10:P2}");
         }
 
         private IDataView GetData(string path)
@@ -239,7 +207,6 @@ namespace MLNet.NoshowV3
         {
             public void Report(RunDetail<BinaryClassificationMetrics> value)
             {
-                var model = value.Model;
                 ConsoleHelper.Print(value.TrainerName, value.ValidationMetrics);
             }
         }
