@@ -109,7 +109,7 @@ namespace MLNet.NoshowV3
                     //ExampleWeightColumnName = nameof(Appointment.Weight),
                     EvaluationMetric = LightGbmBinaryTrainer.Options.EvaluateMetricType.Logloss,
                     //UnbalancedSets = true,
-                    WeightOfPositiveExamples = 2, //new Random().Next(20, 40) / 10,
+                    WeightOfPositiveExamples = 1.6, //new Random().Next(20, 40) / 10,
                     //Sigmoid = 1,
                     CategoricalSmoothing = 1, //Random(0, 1, 10, 20),
                     L2CategoricalRegularization = 1, //Random(0.1, 0.5, 1, 5, 10),
@@ -121,11 +121,11 @@ namespace MLNet.NoshowV3
                     MinimumExampleCountPerGroup = 100, //Random(10, 50, 100, 200),
                     NumberOfIterations = 100,
                     LearningRate = 0.4f, //Random(0.025f, 0.08f, 0.2f, 0.4f),
-                    NumberOfLeaves = 16, //Random(2, 16, 64, 128),
+                    NumberOfLeaves = 128, //Random(2, 16, 64, 128),
                     Booster = new GradientBooster.Options
                     {
-                        L1Regularization = 0.5, //Random(0, 0.5, 1),
-                        L2Regularization = 0.5, //Random(0, 0.5, 1),
+                        L1Regularization = 1, //Random(0, 0.5, 1),
+                        L2Regularization = 1, //Random(0, 0.5, 1),
                         MaximumTreeDepth = 0,
                         SubsampleFrequency = 0,
                         SubsampleFraction = 1,

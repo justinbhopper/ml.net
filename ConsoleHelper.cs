@@ -65,8 +65,8 @@ namespace MLNet
             Console.WriteLine($"*       Metrics for {name} binary classification model");
             Console.WriteLine($"*------------------------------------------------------------------------------------------------------------");
             Console.WriteLine($"*       Accuracy:          {metrics.Accuracy:P2}");
-            Console.WriteLine($"*       AUC:               {metrics.AreaUnderRocCurve:P2}");
-            Console.WriteLine($"*       AUC recall Curve:  {metrics.AreaUnderPrecisionRecallCurve:P2}");
+            //Console.WriteLine($"*       AUC:               {metrics.AreaUnderRocCurve:P2}");
+            //Console.WriteLine($"*       AUC recall Curve:  {metrics.AreaUnderPrecisionRecallCurve:P2}");
             Console.WriteLine($"*       F1Score:           {metrics.F1Score:P2}");
             Console.WriteLine($"*       FBeta:             {(fBeta.HasValue ? metrics.FBeta(fBeta.Value) : metrics.FBeta()):P2}");
             Console.WriteLine($"*       PositivePrecision: {metrics.PositivePrecision:P2}");
