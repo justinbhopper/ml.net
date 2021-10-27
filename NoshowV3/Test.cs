@@ -38,6 +38,7 @@ namespace MLNet.NoshowV3
                 : s_binnedColumns.Contains(name) ? name + "Binned" : name)
             .ToArray();
 
+        private readonly string _rootPath;
         private readonly string _modelSavePath;
         private readonly string _dataPath;
         private readonly string _validatePath;
@@ -46,10 +47,18 @@ namespace MLNet.NoshowV3
 
         public Test(string rootPath)
         {
-            _modelSavePath = Path.Combine(rootPath, "noshowv3", "model.zip");
-            _dataPath = Path.Combine(rootPath, "noshowv3", "data_hmhcks.tsv");
-            _validatePath = Path.Combine(rootPath, "noshowv3", "data_pmhcks.tsv");
+            _rootPath = rootPath;
+            _modelSavePath = GetFilePath("model.zip");
+            _dataPath = GetFilePath("data_hmhcks.tsv");
+            _validatePath = GetFilePath("data_pmhcks.tsv");
             _context = new MLContext(seed: 0);
+        }
+
+        public BinaryClassificationMetrics Evaluate(string modelFileName = "model.zip")
+        {
+            var testData = GetData(_validatePath);
+            var model = _context.Model.Load(GetFilePath(modelFileName), out var _);
+            return Evaluate("Saved model", model, testData);
         }
 
         public void Experiment()
@@ -59,7 +68,7 @@ namespace MLNet.NoshowV3
 
             var experimentSettings = new BinaryExperimentSettings
             {
-                MaxExperimentTimeInSeconds = 5 * 60,
+                MaxExperimentTimeInSeconds = 30 * 60,
                 OptimizingMetric = BinaryClassificationMetric.F1Score,
             };
 
@@ -99,28 +108,27 @@ namespace MLNet.NoshowV3
                 {
                     //ExampleWeightColumnName = nameof(Appointment.Weight),
                     EvaluationMetric = LightGbmBinaryTrainer.Options.EvaluateMetricType.Logloss,
-                    UnbalancedSets = true,
-                    //WeightOfPositiveExamples = 9,
-                    Seed = 459933621,
-                    Sigmoid = 1,
-                    CategoricalSmoothing = 10,
-                    L2CategoricalRegularization = 10,
-                    MaximumCategoricalSplitPointCount = 8,
-                    MinimumExampleCountPerLeaf = 1,
+                    //UnbalancedSets = true,
+                    WeightOfPositiveExamples = 2, //new Random().Next(20, 40) / 10,
+                    //Sigmoid = 1,
+                    CategoricalSmoothing = 1, //Random(0, 1, 10, 20),
+                    L2CategoricalRegularization = 1, //Random(0.1, 0.5, 1, 5, 10),
+                    MaximumCategoricalSplitPointCount = 16, //Random(8, 16, 32, 64),
+                    MinimumExampleCountPerLeaf = 20, //Random(1, 10, 20, 50),
                     MaximumBinCountPerFeature = 200,
                     HandleMissingValue = true,
                     UseZeroAsMissingValue = false,
-                    MinimumExampleCountPerGroup = 100,
+                    MinimumExampleCountPerGroup = 100, //Random(10, 50, 100, 200),
                     NumberOfIterations = 100,
-                    LearningRate = 0.025,
-                    NumberOfLeaves = 64,
+                    LearningRate = 0.4f, //Random(0.025f, 0.08f, 0.2f, 0.4f),
+                    NumberOfLeaves = 16, //Random(2, 16, 64, 128),
                     Booster = new GradientBooster.Options
                     {
-                        L1Regularization = 0,
-                        L2Regularization = 0.5,
+                        L1Regularization = 0.5, //Random(0, 0.5, 1),
+                        L2Regularization = 0.5, //Random(0, 0.5, 1),
                         MaximumTreeDepth = 0,
                         SubsampleFrequency = 0,
-                        SubsampleFraction = 0.5,
+                        SubsampleFraction = 1,
                         FeatureFraction = 1,
                         MinimumChildWeight = 0.1,
                         MinimumSplitGain = 0,
@@ -133,8 +141,10 @@ namespace MLNet.NoshowV3
 
                 var model = pipeline.Fit(trainingData);
 
-                var beta = 0.5;
-                var score = Evaluate("Test", model, testData, beta).F1Score; // .FBeta(beta);
+                var beta = 2;
+                var metrics = Evaluate("Test", model, testData, beta);
+                //var score = metrics.FBeta(beta);
+                var score = (metrics.PositiveRecall + metrics.NegativeRecall) / 2;
 
                 if (!bestScore.HasValue || score > bestScore.Value)
                 {
@@ -146,6 +156,11 @@ namespace MLNet.NoshowV3
                 {
                     Console.WriteLine($"Best model is still {bestScore.Value:P2}");
                 }
+            }
+
+            static T Random<T>(params T[] choices)
+            {
+                return choices[new Random().Next(0, choices.Length - 1)];
             }
         }
 
@@ -175,13 +190,6 @@ namespace MLNet.NoshowV3
             return CreatePipeline().Append(trainer);
         }
 
-        public BinaryClassificationMetrics Evaluate()
-        {
-            var testData = GetData(_validatePath);
-            var model = _context.Model.Load(_modelSavePath, out var _);
-            return Evaluate("Saved model", model, testData);
-        }
-
         private BinaryClassificationMetrics Evaluate(string modelName, ITransformer model, IDataView testData, double beta = 0.5)
         {
             var predictions = model.Transform(testData);
@@ -201,6 +209,11 @@ namespace MLNet.NoshowV3
             {
                 HasHeader = true,
             });
+        }
+
+        private string GetFilePath(string filename)
+        {
+            return Path.Combine(_rootPath, "noshowv3", filename);
         }
 
         private class ProgressHandler : IProgress<RunDetail<BinaryClassificationMetrics>>

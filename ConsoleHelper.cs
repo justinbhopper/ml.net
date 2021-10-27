@@ -55,6 +55,12 @@ namespace MLNet
 
         public static void Print(string name, BinaryClassificationMetrics metrics, double? fBeta = null)
         {
+            var counts = metrics.ConfusionMatrix.Counts;
+            var tp = counts[0][0];
+            var fn = counts[0][1];
+            var fp = counts[1][0];
+            var tn = counts[1][1];
+
             Console.WriteLine($"*************************************************************************************************************");
             Console.WriteLine($"*       Metrics for {name} binary classification model");
             Console.WriteLine($"*------------------------------------------------------------------------------------------------------------");
@@ -64,9 +70,12 @@ namespace MLNet
             Console.WriteLine($"*       F1Score:           {metrics.F1Score:P2}");
             Console.WriteLine($"*       FBeta:             {(fBeta.HasValue ? metrics.FBeta(fBeta.Value) : metrics.FBeta()):P2}");
             Console.WriteLine($"*       PositivePrecision: {metrics.PositivePrecision:P2}");
-            Console.WriteLine($"*       PositiveRecall:    {metrics.PositiveRecall:P2}");
+            Console.WriteLine($"*       PositiveRecall:    {metrics.PositiveRecall:P2}      ");
             Console.WriteLine($"*       NegativePrecision: {metrics.NegativePrecision:P2}");
             Console.WriteLine($"*       NegativeRecall:    {metrics.NegativeRecall:P2}");
+            Console.WriteLine($"*       True Matrix:       TP: {tp,6:N0}   TN: {tn,6:N0}  All: {tp + tn:N0}");
+            Console.WriteLine($"*       False Matrix:      FP: {fp,6:N0}   FN: {fn,6:N0}  All: {fp + fn:N0}");
+
             Console.WriteLine($"*************************************************************************************************************");
             Console.WriteLine();
         }

@@ -13,7 +13,9 @@ namespace MLNet
         {
             var stopwatch = Stopwatch.StartNew();
             var program = new Test(s_rootPath);
-            program.Train();
+            program.Evaluate("model - 46% f1, 63% acc, best recall.zip");
+            //program.Evaluate("model.zip");
+            //program.Train();
 
             Console.WriteLine($"Total time took {stopwatch.ElapsedMilliseconds / 1000} seconds.");
         }
