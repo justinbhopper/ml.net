@@ -164,6 +164,48 @@ namespace MLNet.NoshowV3
             }
         }
 
+        public void Predict()
+        {
+            var model = _context.Model.Load(_modelSavePath, out var schema);
+
+            // NOTE: Use PredictionEnginePool service in real world:
+            // https://docs.microsoft.com/en-us/dotnet/machine-learning/how-to-guides/serve-model-web-api-ml-net
+            var engine = _context.Model.CreatePredictionEngine<Appointment, NoShowPrediction>(model, schema);
+
+            Predict(engine, "1", new Appointment
+            {
+                NoShow = true,
+                LeadTime = 20,
+                DayOfWeek = 3,
+                Hour = 0,
+                Age = 10,
+                PreviousNoShows = 5,
+                TotalScheduled = 70,
+            });
+
+            Predict(engine, "2", new Appointment
+            {
+                NoShow = false,
+                LeadTime = 8,
+                DayOfWeek = 5,
+                Hour = 0,
+                Age = 35,
+                PreviousNoShows = 3,
+                TotalScheduled = 13,
+            });
+
+            Predict(engine, "3", new Appointment
+            {
+                NoShow = false,
+                LeadTime = 2,
+                DayOfWeek = 3,
+                Hour = 13,
+                Age = 29,
+                PreviousNoShows = 0,
+                TotalScheduled = 3004,
+            });
+        }
+
         private IEstimator<ITransformer> CreatePipeline()
         {
             var transforms = _context.Transforms;
@@ -201,6 +243,13 @@ namespace MLNet.NoshowV3
         private void SaveModel(DataViewSchema schema, ITransformer model)
         {
             _context.Model.Save(model, schema, _modelSavePath);
+        }
+
+        private void Predict(PredictionEngine<Appointment, NoShowPrediction> predictionEngine, string description, Appointment sample)
+        {
+            var prediction = predictionEngine.Predict(sample);
+
+            Console.WriteLine($"Sample: {description,-20} Predicted: {prediction.NoShow,-5} Actual: {sample.NoShow,-5} Probability: {prediction.Probability,-10:P2}");
         }
 
         private IDataView GetData(string path)
