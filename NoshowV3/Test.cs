@@ -50,7 +50,7 @@ namespace MLNet.NoshowV3
             _rootPath = rootPath;
             _modelSavePath = GetFilePath("model.zip");
             _dataPath = GetFilePath("data_hmhcks.tsv");
-            _validatePath = GetFilePath("data_pmhcks.tsv");
+            _validatePath = GetFilePath("data_ccwks.tsv");
             _context = new MLContext(seed: 0);
         }
 
@@ -143,8 +143,8 @@ namespace MLNet.NoshowV3
 
                 var beta = 2;
                 var metrics = Evaluate("Test", model, testData, beta);
-                //var score = metrics.FBeta(beta);
-                var score = (metrics.PositiveRecall + metrics.NegativeRecall) / 2;
+                var score = metrics.FBeta(beta);
+                //var score = (metrics.PositiveRecall + metrics.NegativeRecall) / 2;
 
                 if (!bestScore.HasValue || score > bestScore.Value)
                 {

@@ -17,7 +17,7 @@ namespace MLNet
             //program.Evaluate("model - 72% acc.zip");
             //program.Evaluate("model.zip");
             //program.Train();
-            program.Predict();
+            program.Train();
 
             Console.WriteLine($"Total time took {stopwatch.ElapsedMilliseconds / 1000} seconds.");
         }
