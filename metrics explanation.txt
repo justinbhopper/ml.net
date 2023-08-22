@@ -23,3 +23,19 @@ e.g. if 1/1000 appts are no-show, you can end up with a 99.9% accurate model tha
 
 
 https://neptune.ai/blog/f1-score-accuracy-roc-auc-pr-auc
+
+
+Example output:
+*************************************************************************************************************
+*       Metrics for Test binary classification model
+*------------------------------------------------------------------------------------------------------------
+*       Accuracy:          43.08%
+*       F1Score:           44.20%
+*       FBeta:             34.48%
+*       PositivePrecision: 30.07%
+*       PositiveRecall:    83.39%
+*       NegativePrecision: 82.07%
+*       NegativeRecall:    28.15%
+*       True Matrix:       TP: 36,278   TN: 33,062  All: 69,340
+*       False Matrix:      FP: 84,374   FN:  7,224  All: 91,598
+*************************************************************************************************************
