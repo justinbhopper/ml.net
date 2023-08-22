@@ -108,27 +108,28 @@ namespace MLNet.NoshowV3
                 {
                     //ExampleWeightColumnName = nameof(Appointment.Weight),
                     EvaluationMetric = LightGbmBinaryTrainer.Options.EvaluateMetricType.Logloss,
-                    //UnbalancedSets = true,
-                    WeightOfPositiveExamples = 1.6, //new Random().Next(20, 40) / 10,
-                    //Sigmoid = 1,
+                    UnbalancedSets = true,
+                    Seed = 459933621,
+                    //WeightOfPositiveExamples = 1.6, //new Random().Next(20, 40) / 10,
+                    Sigmoid = 1,
                     CategoricalSmoothing = 1, //Random(0, 1, 10, 20),
-                    L2CategoricalRegularization = 1, //Random(0.1, 0.5, 1, 5, 10),
-                    MaximumCategoricalSplitPointCount = 16, //Random(8, 16, 32, 64),
-                    MinimumExampleCountPerLeaf = 20, //Random(1, 10, 20, 50),
+                    L2CategoricalRegularization = 10, //Random(0.1, 0.5, 1, 5, 10),
+                    MaximumCategoricalSplitPointCount = 8, //Random(8, 16, 32, 64),
+                    MinimumExampleCountPerLeaf = 1, //Random(1, 10, 20, 50),
                     MaximumBinCountPerFeature = 200,
                     HandleMissingValue = true,
                     UseZeroAsMissingValue = false,
                     MinimumExampleCountPerGroup = 100, //Random(10, 50, 100, 200),
                     NumberOfIterations = 100,
-                    LearningRate = 0.4f, //Random(0.025f, 0.08f, 0.2f, 0.4f),
-                    NumberOfLeaves = 128, //Random(2, 16, 64, 128),
+                    LearningRate = 0.025f, //Random(0.025f, 0.08f, 0.2f, 0.4f),
+                    NumberOfLeaves = 64, //Random(2, 16, 64, 128),
                     Booster = new GradientBooster.Options
                     {
-                        L1Regularization = 1, //Random(0, 0.5, 1),
-                        L2Regularization = 1, //Random(0, 0.5, 1),
+                        L1Regularization = 0, //Random(0, 0.5, 1),
+                        L2Regularization = 0.5, //Random(0, 0.5, 1),
                         MaximumTreeDepth = 0,
                         SubsampleFrequency = 0,
-                        SubsampleFraction = 1,
+                        SubsampleFraction = 0.5,
                         FeatureFraction = 1,
                         MinimumChildWeight = 0.1,
                         MinimumSplitGain = 0,
@@ -141,9 +142,10 @@ namespace MLNet.NoshowV3
 
                 var model = pipeline.Fit(trainingData);
 
-                var beta = 2;
+                var beta = 0.5;
                 var metrics = Evaluate("Test", model, testData, beta);
-                var score = metrics.FBeta(beta);
+                var score = metrics.F1Score;
+                //var score = metrics.FBeta(beta);
                 //var score = (metrics.PositiveRecall + metrics.NegativeRecall) / 2;
 
                 if (!bestScore.HasValue || score > bestScore.Value)
